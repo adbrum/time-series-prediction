@@ -36,8 +36,6 @@ from apps.predictions.models import SAGRAData
 
 @login_required(login_url="/login/")
 def index(request):
-    # context = {'segment': 'index'}
-
     data = {
         '': '',
         'Tmed (ºC)': 'average_temperature',
@@ -56,17 +54,23 @@ def index(request):
         'Tmin Relva(ºC)': 'minimum_grass_temperature',
         'ET0 (mm)': 'ET0',
     }
-    context = {'data': data}
 
     html_template = loader.get_template('index.html')
 
-    if request.method == 'POST' and request.FILES['myfile']:
+    if not request.FILES.get('myfile', False):
+        if request.method == 'POST':
+            item_value = request.POST.get('item_value')
+            open_file_automodel('', item_value)
+            context = {'data': data,  'series': True}
+        else:
+            context = {'data': data,  'series': False}
+    else:
         myfile = request.FILES['myfile']
 
         item_value = request.POST.get('item_value')
 
         # fs = FileSystemStorage()
-        # filename = fs.save('assets/' + myfile.name, myfile)
+        # filename = fs.save('media/files/' + myfile.name, myfile)
         # uploaded_file_url = fs.url(filename)
         uploaded_file_url = open_file_automodel(myfile.name, item_value)
 
@@ -75,13 +79,12 @@ def index(request):
     return HttpResponse(html_template.render(context, request))
 
 
-@login_required(login_url="/login/")
+@ login_required(login_url="/login/")
 def pages(request):
     context = {}
     # All resource paths end in .html.
     # Pick out the html file name from the url. And load that template.
     try:
-
         load_template = request.path.split('/')[-1]
 
         if load_template == 'admin':
@@ -103,34 +106,35 @@ def pages(request):
 
 def open_file_automodel(filename, item_value):
 
-    df3 = pd.read_excel(f'core/static/files/{filename}')
-    # df3.insert(0, 'id', None)
+    if not SAGRAData.objects.filter(pk=1).exists():
+        df3 = pd.read_excel(f'media/files/{filename}')
 
-    df3.rename(columns={
-        'EMA': 'EMA',
-        'Data': 'date_occurrence',
-        'Tmed (ºC)': 'average_temperature',
-        'Tmax (ºC)': 'maximum_temperature',
-        'Tmin (ºC)': 'minimum_temperature',
-        'HRmed (%)': 'average_humidity',
-        'HRmax (%)': 'maximum_humidity',
-        'HRmin (%)': 'minimum_humidity',
-        'RSG (kj/m2)': 'RSG',
-        'DV (graus)': 'DV',
-        'VVmed (m/s)': 'average_wind_speed',
-        'VVmax (m/s)': 'maximum_wind_speed',
-        'P (mm)': 'rainfall',
-        'Tmed Relva(ºC)': 'average_grass_temperature',
-        'Tmax Relva(ºC)': 'maximum_grass_temperature',
-        'Tmin Relva(ºC)': 'minimum_grass_temperature',
-        'ET0 (mm)': 'ET0',
-    },
-        inplace=True, errors='raise')
+        df3.rename(columns={
+            'EMA': 'EMA',
+            'Data': 'date_occurrence',
+            'Tmed (ºC)': 'average_temperature',
+            'Tmax (ºC)': 'maximum_temperature',
+            'Tmin (ºC)': 'minimum_temperature',
+            'HRmed (%)': 'average_humidity',
+            'HRmax (%)': 'maximum_humidity',
+            'HRmin (%)': 'minimum_humidity',
+            'RSG (kj/m2)': 'RSG',
+            'DV (graus)': 'DV',
+            'VVmed (m/s)': 'average_wind_speed',
+            'VVmax (m/s)': 'maximum_wind_speed',
+            'P (mm)': 'rainfall',
+            'Tmed Relva(ºC)': 'average_grass_temperature',
+            'Tmax Relva(ºC)': 'maximum_grass_temperature',
+            'Tmin Relva(ºC)': 'minimum_grass_temperature',
+            'ET0 (mm)': 'ET0',
+        }, inplace=True, errors='raise')
 
-    engine = create_engine('sqlite:///db.sqlite3')
+        engine = create_engine('sqlite:///db.sqlite3')
 
-    df3.to_sql(SAGRAData._meta.db_table,
-               if_exists='replace', con=engine, index_label='id', index=True)
+        df3.to_sql(SAGRAData._meta.db_table,
+                   if_exists='replace', con=engine, index_label='id', index=True)
+    else:
+        df3 = pd.DataFrame(list(SAGRAData.objects.all().values()))
 
     field = item_value
     n_periods = 60
@@ -153,7 +157,7 @@ def open_file_automodel(filename, item_value):
     plt.tight_layout()
     plt.plot(df3.index, df3[field], label='linear')
     plt.savefig(
-        "core/static/files/autoarima_01.png",
+        "media/files/autoarima_01.png",
         dpi=300, bbox_inches='tight'
     )
     # plt.show()
@@ -235,17 +239,15 @@ def plotarima(n_periods, automodel, serie, field):
     plt.legend(("past", "forecast", "95% confidence interval"),
                loc="upper left")
     plt.tight_layout()
-    plt.savefig("core/static/files/autoarima.png",
+    plt.savefig("media/files/autoarima.png",
                 dpi=300, bbox_inches='tight')
     # plt.show()
 
     jsonMerged = {**json.loads(data_serie), **json.loads(data)}
     data = json.dumps(jsonMerged)
-    print(data)
+    # print(data)
 
     context = {'data': data}
-
-    html_template = loader.get_template('index.html')
 
     html_template = loader.get_template('index.html')
 
