@@ -1,11 +1,11 @@
 {% extends "layouts/base.html" %}
 
-{% block title %} Charts Morris {% endblock %} 
+{% block title %} Charts Morris {% endblock %}
 
 <!-- Specific CSS goes HERE -->
 {% block stylesheets %}
 
-    <link rel="stylesheet" href="/static/assets/plugins/chart-morris/css/morris.css">
+<link rel="stylesheet" href="/static/assets/plugins/chart-morris/css/morris.css">
 
 {% endblock stylesheets %}
 
@@ -17,6 +17,7 @@
         <div class="page-header">
             <div class="page-block">
                 <div class="row align-items-center">
+
                     <div class="col-md-12">
                         <div class="page-header-title">
                             <h5 class="m-b-10">Morris Chart</h5>
@@ -33,50 +34,37 @@
         <!-- [ breadcrumb ] end -->
         <div class="main-body">
             <div class="page-wrapper">
+                <div class="row">
+                    <!-- [ Morris Chart ] start -->
+                    <div class="col-xl-12">
+                        <div class="card">
+                            <!-- <div class="card-header">
+                                <h5>Line [ Angle ] Chart</h5>
+                            </div> -->
+                            <div class="card-block">
+                                <form method="post" action="{% url 'automodel' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <input type="file" name="myfile">
+                                    <select name="item_value">
+                                        {% for item in items %}
+                                        <option value="{{ item }}">{{ item }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">Upload</button>
+                                </form>
+
+                                {% if uploaded_file_url %}
+                                <p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>
+                                {% endif %}
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- [ Main Content ] start -->
                 <div class="row">
                     <!-- [ Morris Chart ] start -->
-                    <div class="col-xl-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Bar [ Simple ] Chart</h5>
-                            </div>
-                            <div class="card-block">
-                                <div id="morris-bar-chart" style="height:300px"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-xl-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Bar [ Stacked ] Chart</h5>
-                            </div>
-                            <div class="card-block">
-                                <div id="morris-bar-stacked-chart" style="height:300px"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-xl-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Line [ Angle ] Chart</h5>
-                            </div>
-                            <div class="card-block">
-                                <div id="morris-area-chart" style="height:300px"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-xl-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Area [ Smooth ] Chart</h5>
-                            </div>
-                            <div class="card-block">
-                                <div id="morris-area-curved-chart" style="height:300px"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-xl-6">
+                    <div class="col-xl-12">
                         <div class="card">
                             <div class="card-header">
                                 <h5>Line [ Angle ] Chart</h5>
@@ -86,23 +74,13 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-xl-6">
+                    <div class="col-xl-12">
                         <div class="card">
                             <div class="card-header">
                                 <h5>Line [ Smooth ] Chart</h5>
                             </div>
                             <div class="card-block">
                                 <div id="morris-line-smooth-chart" class="ChartShadow" style="height:300px"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-xl-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Donut Chart</h5>
-                            </div>
-                            <div class="card-block">
-                                <div id="morris-donut-chart" style="height:300px"></div>
                             </div>
                         </div>
                     </div>
@@ -120,8 +98,118 @@
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
 
-    <script src="/static/assets/plugins/chart-morris/js/raphael.min.js"></script>
-    <script src="/static/assets/plugins/chart-morris/js/morris.min.js"></script>
-    <script src="/static/assets/js/pages/chart-morris-custom.js"></script>
+<script src="/static/assets/plugins/chart-morris/js/raphael.min.js"></script>
+<script src="/static/assets/plugins/chart-morris/js/morris.min.js"></script>
+<!-- <script src="/static/assets/js/pages/chart-morris-custom.js"></script> -->
+
+<script>
+    'use strict';
+    $(document).ready(function () {
+        setTimeout(function () {
+
+            // [ line-angle-chart ] Start
+            Morris.Line({
+                element: 'morris-line-chart',
+                data: [{
+                    y: '2006',
+                    a: 20,
+                    b: 10
+                },
+                {
+                    y: '2007',
+                    a: 55,
+                    b: 45
+                },
+                {
+                    y: '2008',
+                    a: 45,
+                    b: 35
+                },
+                {
+                    y: '2009',
+                    a: 75,
+                    b: 65
+                },
+                {
+                    y: '2010',
+                    a: 50,
+                    b: 40
+                },
+                {
+                    y: '2011',
+                    a: 75,
+                    b: 65
+                },
+                {
+                    y: '2012',
+                    a: 100,
+                    b: 90
+                }
+                ],
+                xkey: 'y',
+                redraw: true,
+                resize: true,
+                smooth: false,
+                ykeys: ['a', 'b'],
+                hideHover: 'auto',
+                responsive: true,
+                labels: ['Series A', 'Series B'],
+                lineColors: ['#1de9b6', '#04a9f5']
+            });
+            // [ line-angle-chart ] end
+            // [ line-smooth-chart ] start
+            Morris.Line({
+                element: 'morris-line-smooth-chart',
+                data: [{
+                    y: '2006',
+                    a: 100,
+                    b: 90
+                },
+                {
+                    y: '2007',
+                    a: 75,
+                    b: 65
+                },
+                {
+                    y: '2008',
+                    a: 50,
+                    b: 40
+                },
+                {
+                    y: '2009',
+                    a: 75,
+                    b: 65
+                },
+                {
+                    y: '2010',
+                    a: 50,
+                    b: 40
+                },
+                {
+                    y: '2011',
+                    a: 75,
+                    b: 65
+                },
+                {
+                    y: '2012',
+                    a: 100,
+                    b: 90
+                }
+                ],
+                xkey: 'y',
+                redraw: true,
+                resize: true,
+                ykeys: ['a', 'b'],
+                hideHover: 'auto',
+                responsive: true,
+                labels: ['Series A', 'Series B'],
+                lineColors: ['#1de9b6', '#A389D4']
+            });
+            // [ line-smooth-chart ] end
+        }, 700);
+    });
+
+
+</script>
 
 {% endblock javascripts %}
