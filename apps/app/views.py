@@ -70,7 +70,7 @@ def index(request):
         item_value = request.POST.get('item_value')
 
         # fs = FileSystemStorage()
-        # filename = fs.save('media/files/' + myfile.name, myfile)
+        # filename = fs.save('core/static/files/' + myfile.name, myfile)
         # uploaded_file_url = fs.url(filename)
         uploaded_file_url = open_file_automodel(myfile.name, item_value)
 
@@ -107,7 +107,7 @@ def pages(request):
 def open_file_automodel(filename, item_value):
 
     if not SAGRAData.objects.filter(pk=1).exists():
-        df3 = pd.read_excel(f'media/files/{filename}')
+        df3 = pd.read_excel(f'core/static/files/{filename}')
 
         df3.rename(columns={
             'EMA': 'EMA',
@@ -157,7 +157,7 @@ def open_file_automodel(filename, item_value):
     plt.tight_layout()
     plt.plot(df3.index, df3[field], label='linear')
     plt.savefig(
-        "media/files/autoarima_01.png",
+        "core/static/files/autoarima_01.png",
         dpi=300, bbox_inches='tight'
     )
     # plt.show()
@@ -239,7 +239,7 @@ def plotarima(n_periods, automodel, serie, field):
     plt.legend(("past", "forecast", "95% confidence interval"),
                loc="upper left")
     plt.tight_layout()
-    plt.savefig("media/files/autoarima.png",
+    plt.savefig("core/static/files/autoarima.png",
                 dpi=300, bbox_inches='tight')
     # plt.show()
 
