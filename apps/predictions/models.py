@@ -2,7 +2,7 @@ from django.db import models
 
 
 class SAGRAData(models.Model):
-    local = models.CharField(max_length=100)
+    EMA = models.CharField(max_length=100)
     date_occurrence = models.DateTimeField()
     # 'ºC'
     average_temperature = models.CharField(max_length=10)
@@ -18,6 +18,7 @@ class SAGRAData(models.Model):
     # 'ºC'
     average_grass_temperature = models.CharField(max_length=10)
     maximum_grass_temperature = models.CharField(max_length=10)
+    minimum_grass_temperature = models.CharField(max_length=10)
     # 'mm'
     rainfall = models.CharField(max_length=10)
     # 'kj/m2'
@@ -27,7 +28,7 @@ class SAGRAData(models.Model):
     # 'mm'
     ET0 = models.CharField(max_length=10)
 
-    created_on = models.DateTimeField(auto_now_add=True)
+    # created_on = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.local
+        return self.EMA

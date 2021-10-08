@@ -54,8 +54,8 @@
                                             <select
                                                 class="js-example-basic-single form-control select2-hidden-accessible"
                                                 name="item_value">
-                                                {% for item in items %}
-                                                <option value="{{ item }}">{{ item }}</option>
+                                                {% for key, values in data.items %}
+                                                <option value="{{ values }}">{{ key }}</option>
                                                 {% endfor %}
                                             </select>
                                         </div>

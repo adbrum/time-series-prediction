@@ -38,25 +38,25 @@ from apps.predictions.models import SAGRAData
 def index(request):
     # context = {'segment': 'index'}
 
-    items = [
-        '',
-        'Tmed (ºC)',
-        'Tmax (ºC)',
-        'Tmin (ºC)',
-        'HRmed (%)',
-        'HRmax (%)',
-        'HRmin (%)',
-        'RSG (kj/m2)',
-        'DV (graus)',
-        'VVmed (m/s)',
-        'VVmax (m/s)',
-        'P (mm)',
-        'Tmed Relva(ºC)',
-        'Tmax Relva(ºC)',
-        'Tmin Relva(ºC)',
-        'ET0 (mm)'
-    ]
-    context = {'items': items}
+    data = {
+        '': '',
+        'Tmed (ºC)': 'average_temperature',
+        'Tmax (ºC)': 'maximum_temperature',
+        'Tmin (ºC)': 'minimum_temperature',
+        'HRmed (%)': 'average_humidity',
+        'HRmax (%)': 'maximum_humidity',
+        'HRmin (%)': 'minimum_humidity',
+        'RSG (kj/m2)': 'RSG',
+        'DV (graus)': 'DV',
+        'VVmed (m/s)': 'average_wind_speed',
+        'VVmax (m/s)': 'maximum_wind_speed',
+        'P (mm)': 'rainfall',
+        'Tmed Relva(ºC)': 'average_grass_temperature',
+        'Tmax Relva(ºC)': 'maximum_grass_temperature',
+        'Tmin Relva(ºC)': 'minimum_grass_temperature',
+        'ET0 (mm)': 'ET0',
+    }
+    context = {'data': data}
 
     html_template = loader.get_template('index.html')
 
@@ -70,7 +70,7 @@ def index(request):
         # uploaded_file_url = fs.url(filename)
         uploaded_file_url = open_file_automodel(myfile.name, item_value)
 
-        context = {'items': items,  '\  ': uploaded_file_url, 'series': True}
+        context = {'data': data,  '\  ': uploaded_file_url, 'series': True}
 
     return HttpResponse(html_template.render(context, request))
 
@@ -104,22 +104,45 @@ def pages(request):
 def open_file_automodel(filename, item_value):
 
     df3 = pd.read_excel(f'core/static/files/{filename}')
+    # df3.insert(0, 'id', None)
+
+    df3.rename(columns={
+        'EMA': 'EMA',
+        'Data': 'date_occurrence',
+        'Tmed (ºC)': 'average_temperature',
+        'Tmax (ºC)': 'maximum_temperature',
+        'Tmin (ºC)': 'minimum_temperature',
+        'HRmed (%)': 'average_humidity',
+        'HRmax (%)': 'maximum_humidity',
+        'HRmin (%)': 'minimum_humidity',
+        'RSG (kj/m2)': 'RSG',
+        'DV (graus)': 'DV',
+        'VVmed (m/s)': 'average_wind_speed',
+        'VVmax (m/s)': 'maximum_wind_speed',
+        'P (mm)': 'rainfall',
+        'Tmed Relva(ºC)': 'average_grass_temperature',
+        'Tmax Relva(ºC)': 'maximum_grass_temperature',
+        'Tmin Relva(ºC)': 'minimum_grass_temperature',
+        'ET0 (mm)': 'ET0',
+    },
+        inplace=True, errors='raise')
 
     engine = create_engine('sqlite:///db.sqlite3')
+
     df3.to_sql(SAGRAData._meta.db_table,
-               if_exists='replace', con=engine, index=False)
+               if_exists='replace', con=engine, index_label='id', index=True)
 
     field = item_value
     n_periods = 60
 
-    start_test = (df3['Data'][0]).strftime("%d-%m-%Y")
-    end_test = (df3['Data'][len(df3)-1]).strftime("%d-%m-%Y")
+    start_test = (df3['date_occurrence'][0]).strftime("%d-%m-%Y")
+    end_test = (df3['date_occurrence'][len(df3)-1]).strftime("%d-%m-%Y")
 
     print(f"Data inicio {start_test}")
     print(f"Data fim {end_test}")
 
-    df3.Data = pd.to_datetime(df3['Data'])
-    df3.set_index('Data', inplace=True)
+    df3.Data = pd.to_datetime(df3['date_occurrence'])
+    df3.set_index('date_occurrence', inplace=True)
     df3.sort_index(inplace=True)
     df3.head()
     plt.figure(figsize=(15, 6))
@@ -133,7 +156,7 @@ def open_file_automodel(filename, item_value):
         "core/static/files/autoarima_01.png",
         dpi=300, bbox_inches='tight'
     )
-    plt.show()
+    # plt.show()
 
     # automodel = arimamodel(timeseries)
     data_order, automodel = model_auto_ARIMA(df3, field)
@@ -214,7 +237,7 @@ def plotarima(n_periods, automodel, serie, field):
     plt.tight_layout()
     plt.savefig("core/static/files/autoarima.png",
                 dpi=300, bbox_inches='tight')
-    plt.show()
+    # plt.show()
 
     jsonMerged = {**json.loads(data_serie), **json.loads(data)}
     data = json.dumps(jsonMerged)
