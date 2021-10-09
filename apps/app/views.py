@@ -74,7 +74,8 @@ def index(request):
         # uploaded_file_url = fs.url(filename)
         uploaded_file_url = open_file_automodel(myfile.name, item_value)
 
-        context = {'data': data,  '\  ': uploaded_file_url, 'series': True}
+        context = {'data': data,  '\  ': uploaded_file_url,
+                   'series': True, 'filename': myfile.name}
 
     return HttpResponse(html_template.render(context, request))
 
@@ -162,7 +163,6 @@ def open_file_automodel(filename, item_value):
     )
     # plt.show()
 
-    # automodel = arimamodel(timeseries)
     data_order, automodel = model_auto_ARIMA(df3, field)
 
     data = plotarima(n_periods, automodel, df3, field)

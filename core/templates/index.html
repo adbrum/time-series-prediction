@@ -20,13 +20,13 @@
 
                     <div class="col-md-12">
                         <div class="page-header-title">
-                            <h5 class="m-b-10">Morris Chart</h5>
+                            <h5 class="m-b-10">SAGRA Charts</h5>
                         </div>
-                        <ul class="breadcrumb">
+                        <!-- <ul class="breadcrumb">
                             <li class="breadcrumb-item"><a href="/"><i class="feather icon-home"></i></a></li>
                             <li class="breadcrumb-item"><a href="javascript:">Chart</a></li>
                             <li class="breadcrumb-item"><a href="javascript:">Morris Chart</a></li>
-                        </ul>
+                        </ul> -->
                     </div>
                 </div>
             </div>
@@ -38,10 +38,12 @@
                     <!-- [ Morris Chart ] start -->
                     <div class="col-xl-12">
                         <div class="card">
-                            <!-- <div class="card-header">
-                                <h5>Line [ Angle ] Chart</h5>
-                            </div> -->
                             <div class="card-block">
+                                {% if filename %}
+                                <div class="card-header">
+                                    <h5>{{filename}}</h5>
+                                </div>
+                                {% endif %}
                                 <form method="post" action="{% url 'home' %}" enctype="multipart/form-data">
                                     {% csrf_token %}
                                     <div class="row">
