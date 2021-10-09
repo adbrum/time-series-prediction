@@ -22,6 +22,7 @@
                         <div class="page-header-title">
                             <h5 class="m-b-10">SAGRA Charts</h5>
                         </div>
+
                         <!-- <ul class="breadcrumb">
                             <li class="breadcrumb-item"><a href="/"><i class="feather icon-home"></i></a></li>
                             <li class="breadcrumb-item"><a href="javascript:">Chart</a></li>
@@ -135,6 +136,7 @@
                             </div>
                         </div>
                     </div>
+
                     <!-- [ Morris Chart ] end -->
                 </div>
                 <!-- [ Main Content ] end -->
@@ -153,9 +155,30 @@
 <script src="/static/assets/plugins/chart-morris/js/morris.min.js"></script>
 <!-- <script src="/static/assets/js/pages/chart-morris-custom.js"></script> -->
 
+
+<script type="text/javascript">
+
+    //var mydataString = JSON.stringify(("{{data_json|escapejs}}").toString());
+
+    console.log(typeof "{{data_json}}");
+
+
+    const obj = JSON.parse(JSON.stringify("{{ data_json}}"));
+
+    //var mydataString = mydataString.replace('[', '')
+    //var mydataString = mydataString.replace(']', '')
+    //console.log(mydataString)
+    //var string = '[{ "y": "2020", "a": 30, "b": 12 }]';
+    //var obj = JSON.parse(mydataString);
+    //var obj = JSON.parse(obj)
+    console.log(typeof obj);
+</script>
+
 <script>
+
     'use strict';
     $(document).ready(function () {
+
         setTimeout(function () {
 
             // [ line-angle-chart ] Start
@@ -163,18 +186,18 @@
                 element: 'morris-line-chart',
                 data: [{
                     y: '2006',
-                    a: 20,
-                    b: 10
+                    a: 100,
+                    b: 90
                 },
                 {
                     y: '2007',
-                    a: 55,
-                    b: 45
+                    a: 75,
+                    b: 65
                 },
                 {
                     y: '2008',
-                    a: 45,
-                    b: 35
+                    a: 50,
+                    b: 40
                 },
                 {
                     y: '2009',
@@ -197,6 +220,7 @@
                     b: 90
                 }
                 ],
+
                 xkey: 'y',
                 redraw: true,
                 resize: true,

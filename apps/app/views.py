@@ -60,11 +60,12 @@ def index(request):
     if not request.FILES.get('myfile', False):
         if request.method == 'POST':
             item_value = request.POST.get('item_value')
-            open_file_automodel('', item_value)
-            context = {'data': data,  'series': True}
+            data_json = open_file_automodel('', item_value)
+            context = {'data': data,  'series': True, 'data_json': data_json}
         else:
             context = {'data': data,  'series': False}
     else:
+        SAGRAData.objects.filter(pk=1).delete()
         myfile = request.FILES['myfile']
 
         item_value = request.POST.get('item_value')
@@ -75,7 +76,7 @@ def index(request):
         uploaded_file_url = open_file_automodel(myfile.name, item_value)
 
         context = {'data': data,  '\  ': uploaded_file_url,
-                   'series': True, 'filename': myfile.name}
+                   'series': True, 'filename': myfile.name, 'data_json': mark_safe(json.dumps(uploaded_file_url))}
 
     return HttpResponse(html_template.render(context, request))
 
@@ -198,7 +199,7 @@ def plotarima(n_periods, automodel, serie, field):
 
     for key, value in data.items():
         # print(str(datetime.fromtimestamp(int(key[:-3]))), '->', str(value))
-        data_dict[str(datetime.fromtimestamp(int(key[:-3])))] = str(value)
+        data_dict[str(datetime.fromtimestamp(int(key[:-3])))[:10]] = str(value)
 
     data = json.dumps(data_dict, indent=4)
 
@@ -211,6 +212,8 @@ def plotarima(n_periods, automodel, serie, field):
 
     series = serie[field]
 
+    print(series)
+
     data_series = series.to_json(orient='index')
 
     data_series = json.loads(data_series)
@@ -218,13 +221,15 @@ def plotarima(n_periods, automodel, serie, field):
     data_serie = dict()
 
     for key, value in data_series.items():
-        # print(str(datetime.fromtimestamp(int(key[:-3]))), '->', str(value))
-        data_serie[str(datetime.fromtimestamp(int(key[:-3])))] = str(value)
+        # print(str(datetime.fromtimestamp(
+        #     int(key[:-3])))[:10], '->', str(value))
+        data_serie[str(datetime.fromtimestamp(int(key[:-3])))
+                   [:10]] = str(value)
 
     data_serie = json.dumps(data_serie, indent=4)
 
-    # print(
-    # f'#####$$$$$$$$$$$$$$$$$$$$$$$$$$$$ lower_series.index: {data_serie}')
+    print(
+        f'#####$$$$$$$$$$$$$$$$$$$$$$$$$$$$ lower_series.index: {data_serie}')
 
     # Create plot
     plt.figure(figsize=(15, 6))
@@ -243,15 +248,25 @@ def plotarima(n_periods, automodel, serie, field):
                 dpi=300, bbox_inches='tight')
     # plt.show()
 
+    json_list = []
+
     jsonMerged = {**json.loads(data_serie), **json.loads(data)}
+
+    for key, value in jsonMerged.items():
+        json_list.append({'y': key, 'a': value})
+
     data = json.dumps(jsonMerged)
     # print(data)
 
-    context = {'data': data}
+    data = {"data_json": data}
 
-    html_template = loader.get_template('index.html')
+    print('#########################: ', type(json.dumps(data)))
 
-    return HttpResponse(html_template.render(context))
+    # html_template = loader.get_template('index.html')
+
+    # return HttpResponse(html_template.render(context))
+
+    return json_list
 
 
 def model_auto_ARIMA(df, field):
