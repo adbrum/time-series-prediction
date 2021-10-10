@@ -22,7 +22,6 @@
                         <div class="page-header-title">
                             <h5 class="m-b-10">SAGRA Charts</h5>
                         </div>
-
                         <!-- <ul class="breadcrumb">
                             <li class="breadcrumb-item"><a href="/"><i class="feather icon-home"></i></a></li>
                             <li class="breadcrumb-item"><a href="javascript:">Chart</a></li>
@@ -40,21 +39,22 @@
                     <div class="col-xl-12">
                         <div class="card">
                             <div class="card-block">
-                                {% if filename %}
-                                <div class="card-header">
-                                    <h5>{{filename}}</h5>
-                                </div>
-                                {% endif %}
                                 <form method="post" action="{% url 'home' %}" enctype="multipart/form-data">
                                     {% csrf_token %}
+                                    {% if filename %}
+                                    <div class="card-header">
+                                        <h5>{{filename}}</h5>
+                                    </div>
+                                    {% endif %}
                                     <div class="row">
                                         <div class="col-xl-2">
                                             <!-- <input class="form-control" type="file" name="myfile"> -->
-                                            <label for="myfile" class="btn btn-primary">Choose file</label>
+                                            <label for="myfile" class="btn btn-primary">Choose
+                                                file</label>
                                             <input type="file" name="myfile" id="myfile" style="display:none">
                                         </div>
                                         <div class="col-xl-4">
-                                            <select
+                                            <select id="select"
                                                 class="js-example-basic-single form-control select2-hidden-accessible"
                                                 name="item_value">
                                                 {% for key, values in data.items %}
@@ -62,15 +62,14 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
-                                        <button type="submit" class="btn btn-primary">Upload</button>
+                                        <button type="submit" id="btnFetch" class="btn btn-primary mb-2">Upload</button>
                                     </div>
                                 </form>
-
                                 {% if uploaded_file_url %}
-                                <p>Choose file: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a>
+                                <p>Choose file: <a id="btnChoose" href="{{ uploaded_file_url }}">{{ uploaded_file_url
+                                        }}</a>
                                 </p>
                                 {% endif %}
-
                             </div>
                         </div>
                     </div>
@@ -155,12 +154,13 @@
 <script src="/static/assets/plugins/chart-morris/js/morris.min.js"></script>
 <!-- <script src="/static/assets/js/pages/chart-morris-custom.js"></script> -->
 
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
 
 <script type="text/javascript">
 
     //var mydataString = JSON.stringify(("{{data_json|escapejs}}").toString());
 
-    console.log(typeof "{{data_json}}");
+    //console.log(typeof "{{data_json}}");
 
 
     const obj = JSON.parse(JSON.stringify("{{ data_json}}"));
@@ -171,13 +171,24 @@
     //var string = '[{ "y": "2020", "a": 30, "b": 12 }]';
     //var obj = JSON.parse(mydataString);
     //var obj = JSON.parse(obj)
-    console.log(typeof obj);
+    //console.log(typeof obj);
 </script>
 
 <script>
 
     'use strict';
     $(document).ready(function () {
+        $("#btnFetch").click(function () {
+            // disable button
+            setTimeout(function () {
+                $("#btnFetch").prop("disabled", true);
+                $("#select").prop("disabled", true);
+            }, 500);
+            // add spinner to button
+            $(this).html(
+                `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`
+            );
+        });
 
         setTimeout(function () {
 

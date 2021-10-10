@@ -36,6 +36,8 @@ from apps.predictions.models import SAGRAData
 
 @login_required(login_url="/login/")
 def index(request):
+    filename = ''
+
     data = {
         '': '',
         'Tmed (ºC)': 'average_temperature',
@@ -60,13 +62,16 @@ def index(request):
     if not request.FILES.get('myfile', False):
         if request.method == 'POST':
             item_value = request.POST.get('item_value')
-            data_json = open_file_automodel('', item_value)
-            context = {'data': data,  'series': True, 'data_json': data_json}
+            data_json = open_file_automodel(filename, item_value)
+            context = {'data': data,  'series': True,
+                       'data_json': data_json, 'filename': filename, }
         else:
-            context = {'data': data,  'series': False}
+            context = {'data': data,  'series': False, 'spinner': 0}
     else:
         SAGRAData.objects.filter(pk=1).delete()
         myfile = request.FILES['myfile']
+
+        # filename = myfile.name
 
         item_value = request.POST.get('item_value')
 
@@ -75,8 +80,14 @@ def index(request):
         # uploaded_file_url = fs.url(filename)
         uploaded_file_url = open_file_automodel(myfile.name, item_value)
 
-        context = {'data': data,  '\  ': uploaded_file_url,
-                   'series': True, 'filename': myfile.name, 'data_json': mark_safe(json.dumps(uploaded_file_url))}
+        context = {
+            'data': data,
+            '\  ': uploaded_file_url,
+            'series': True,
+            'filename': myfile.name,
+            'data_json': json.dumps(uploaded_file_url),
+            'spinner': 1
+        }
 
     return HttpResponse(html_template.render(context, request))
 
@@ -139,7 +150,7 @@ def open_file_automodel(filename, item_value):
         df3 = pd.DataFrame(list(SAGRAData.objects.all().values()))
 
     field = item_value
-    n_periods = 60
+    n_periods = 30
 
     start_test = (df3['date_occurrence'][0]).strftime("%d-%m-%Y")
     end_test = (df3['date_occurrence'][len(df3)-1]).strftime("%d-%m-%Y")
@@ -176,7 +187,7 @@ def plotarima(n_periods, automodel, serie, field):
     fc, confint = automodel.predict(n_periods=n_periods, return_conf_int=True)
 
     # print(
-    # f'############################### FC: {fc} confint: {confint} \
+    #     f'############################### FC: {fc} confint: {confint} \
     #     --#######- {serie.index[serie.shape[0]-1]}')
 
     # Weekly index
@@ -184,6 +195,12 @@ def plotarima(n_periods, automodel, serie, field):
     # periods=n_periods, freq="D")}}
     fc_ind = pd.date_range(serie.index[serie.shape[0]-1],
                            periods=n_periods, freq="D")
+
+    # Calendar index
+    # fc_ind = pd.date_range(
+    #     start=serie.index[serie.shape[0]-1], end='2020-10-31 00:00:00+00:00')
+    # print(fc_ind)
+
     # print(dict(zip(fc_ind[0], fc)))
 
     # Forecast series
@@ -228,19 +245,19 @@ def plotarima(n_periods, automodel, serie, field):
 
     data_serie = json.dumps(data_serie, indent=4)
 
-    print(
-        f'#####$$$$$$$$$$$$$$$$$$$$$$$$$$$$ lower_series.index: {data_serie}')
+    # print(
+    #     f'#####$$$$$$$$$$$$$$$$$$$$$$$$$$$$ lower_series.index: {data_serie}')
 
     # Create plot
     plt.figure(figsize=(15, 6))
     plt.grid()
     # plt.tight_layout()
     plt.plot(serie[field])
-    plt.plot(fc_series, color="red")
+    plt.plot(fc_series, color="orange")
     plt.xlabel("Date")
     plt.ylabel(serie[field].name)
     plt.fill_between(lower_series.index, lower_series, upper_series, color="k",
-                     alpha=0.25)
+                     alpha=0.15)
     plt.legend(("past", "forecast", "95% confidence interval"),
                loc="upper left")
     plt.tight_layout()
@@ -260,7 +277,7 @@ def plotarima(n_periods, automodel, serie, field):
 
     data = {"data_json": data}
 
-    print('#########################: ', type(json.dumps(data)))
+    # print('#########################: ', type(json.dumps(data)))
 
     # html_template = loader.get_template('index.html')
 
@@ -270,7 +287,7 @@ def plotarima(n_periods, automodel, serie, field):
 
 
 def model_auto_ARIMA(df, field):
-    model = auto_arima(df[field], start_p=0, start_q=0,
+    model = auto_arima(df[field], start_p=1, start_q=1,
                        test='adf',       # use adftest to find optimal 'd'
                        max_p=4, max_q=4,  # maximum p and q
                        m=12,              # frequency of series
