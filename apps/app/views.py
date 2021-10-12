@@ -58,11 +58,14 @@ def index(request):
     }
 
     html_template = loader.get_template('index.html')
+    print('XXXXXXXXXXXXXXXXXXXXXXXXXX. :', request.POST)
 
     if not request.FILES.get('myfile', False):
         if request.method == 'POST':
             item_value = request.POST.get('item_value')
-            data_json = open_file_automodel(filename, item_value)
+            selected_days = request.POST.get('selectedDays')
+            data_json = open_file_automodel(
+                filename, item_value, selected_days)
             context = {'data': data,  'series': True,
                        'data_json': data_json, 'filename': filename, }
         else:
@@ -74,11 +77,13 @@ def index(request):
         # filename = myfile.name
 
         item_value = request.POST.get('item_value')
+        selected_days = request.POST.get('selectedDays')
 
         # fs = FileSystemStorage()
         # filename = fs.save('core/static/files/' + myfile.name, myfile)
         # uploaded_file_url = fs.url(filename)
-        uploaded_file_url = open_file_automodel(myfile.name, item_value)
+        uploaded_file_url = open_file_automodel(
+            myfile.name, item_value, selected_days)
 
         context = {
             'data': data,
@@ -117,7 +122,7 @@ def pages(request):
         return HttpResponse(html_template.render(context, request))
 
 
-def open_file_automodel(filename, item_value):
+def open_file_automodel(filename, item_value, periods):
 
     if not SAGRAData.objects.filter(pk=1).exists():
         df3 = pd.read_excel(f'core/static/files/{filename}')
@@ -150,7 +155,7 @@ def open_file_automodel(filename, item_value):
         df3 = pd.DataFrame(list(SAGRAData.objects.all().values()))
 
     field = item_value
-    n_periods = 30
+    n_periods = int(periods)
 
     start_test = (df3['date_occurrence'][0]).strftime("%d-%m-%Y")
     end_test = (df3['date_occurrence'][len(df3)-1]).strftime("%d-%m-%Y")
@@ -183,8 +188,10 @@ def open_file_automodel(filename, item_value):
 
 
 def plotarima(n_periods, automodel, serie, field):
+
     # Forecast
-    fc, confint = automodel.predict(n_periods=n_periods, return_conf_int=True)
+    fc, confint = automodel.predict(
+        n_periods=n_periods, return_conf_int=True)
 
     # print(
     #     f'############################### FC: {fc} confint: {confint} \

@@ -49,10 +49,9 @@
                                     <div class="row">
                                         <div class="col-xl-4">
                                             <!-- <input class="form-control" type="file" name="myfile"> -->
-                                            <label class="btn btn-primary search-file-btn">
+                                            <label id="btnChoose" class="btn btn-primary search-file-btn">
                                                 <input type="file" name="myfile" id="myfile" style="display:none">
-                                                <span>Choose
-                                                    file</span>
+                                                <span>Choose file</span>
                                             </label>
                                             <span>No file selected</span>
                                         </div>
@@ -65,11 +64,23 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
+                                        <div class="col-xl-2">
+                                            <select
+                                                class="js-example-basic-single form-control select2-hidden-accessible"
+                                                name="selectedDays" id="selectedDays"
+                                                aria-label="Exemplo de select com botão addon">
+                                                <option selected>Prediction days</option>
+                                                <option value="10">10</option>
+                                                <option value="20">20</option>
+                                                <option value="30">30</option>
+                                                <option value="60">60</option>
+                                            </select>
+                                        </div>
                                         <button type="submit" id="btnFetch" class="btn btn-primary mb-2">Upload</button>
                                     </div>
                                 </form>
                                 {% if uploaded_file_url %}
-                                <p>Choose file: <a id="btnChoose" href="{{ uploaded_file_url }}">{{ uploaded_file_url
+                                <p>Choose file: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url
                                         }}</a>
                                 </p>
                                 {% endif %}
@@ -83,7 +94,7 @@
                     <div class="col-xl-12">
                         <div class="card">
                             <div class="card-header">
-                                <h5>Line [ Angle ] Chart</h5>
+                                <h5>Total period graph</h5>
                             </div>
                             <div class="card-block">
                                 <div class="thumbnail mb-12">
@@ -100,7 +111,7 @@
                     <div class="col-xl-12">
                         <div class="card">
                             <div class="card-header">
-                                <h5>Line [ Smooth ] Chart</h5>
+                                <h5>Total period graph and prediction</h5>
                             </div>
                             <div class="card-block">
                                 <div class="thumbnail mb-12">
@@ -155,7 +166,7 @@
 <script src="/static/assets/plugins/chart-morris/js/morris.min.js"></script>
 <!-- <script src="/static/assets/js/pages/chart-morris-custom.js"></script> -->
 
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+<!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script> -->
 
 <script type="text/javascript">
 
@@ -176,7 +187,6 @@
 </script>
 
 <script>
-
     'use strict';
     $(document).ready(function () {
 
@@ -191,8 +201,10 @@
         $("#btnFetch").click(function () {
             // disable button
             setTimeout(function () {
+                $("#btnChoose").prop("disabled", true);
                 $("#btnFetch").prop("disabled", true);
                 $("#select").prop("disabled", true);
+                $("#selectedDays").prop("disabled", true);
             }, 500);
             // add spinner to button
             $(this).html(
