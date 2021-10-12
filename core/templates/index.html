@@ -68,7 +68,7 @@
                                             <select
                                                 class="js-example-basic-single form-control select2-hidden-accessible"
                                                 name="selectedDays" id="selectedDays"
-                                                aria-label="Exemplo de select com botão addon">
+                                                aria-label="Exemplo de select com botão addon" disabled>
                                                 <option selected>Prediction days</option>
                                                 <option value="10">10</option>
                                                 <option value="20">20</option>
@@ -76,7 +76,8 @@
                                                 <option value="60">60</option>
                                             </select>
                                         </div>
-                                        <button type="submit" id="btnFetch" class="btn btn-primary mb-2">Upload</button>
+                                        <button type="submit" id="btnFetch" class="btn btn-primary mb-2"
+                                            disabled>Upload</button>
                                     </div>
                                 </form>
                                 {% if uploaded_file_url %}
@@ -94,7 +95,19 @@
                     <div class="col-xl-12">
                         <div class="card">
                             <div class="card-header">
-                                <h5>Total period graph</h5>
+                                <h5>Total period graph
+                                    <!-- <div> </div>
+                                    <div class="row">
+                                        {% for key, value in period_dates.items %}
+                                        {% if key == 'start_date'%}
+                                        Start date: {{value}}
+                                        {% endif %}
+                                        {% if key == 'end_date'%}
+                                        End date: {{value}}
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div> -->
+                                </h5>
                             </div>
                             <div class="card-block">
                                 <div class="thumbnail mb-12">
@@ -196,6 +209,14 @@
                 fileName = $(this).val().split("\\").slice(-1)[0];
                 $(this).parent().parent().children("span").html(fileName);
             })
+        });
+
+        $('select#select').on('change', function () {
+            $('select#selectedDays').prop('disabled', false);
+        });
+
+        $('select#selectedDays').on('change', function () {
+            $('button#btnFetch').prop('disabled', false);
         });
 
         $("#btnFetch").click(function () {

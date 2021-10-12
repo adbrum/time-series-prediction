@@ -64,10 +64,10 @@ def index(request):
         if request.method == 'POST':
             item_value = request.POST.get('item_value')
             selected_days = request.POST.get('selectedDays')
-            data_json = open_file_automodel(
+            data_json, period_dates = open_file_automodel(
                 filename, item_value, selected_days)
             context = {'data': data,  'series': True,
-                       'data_json': data_json, 'filename': filename, }
+                       'data_json': data_json, 'filename': filename, "period_dates": period_dates}
         else:
             context = {'data': data,  'series': False, 'spinner': 0}
     else:
@@ -82,7 +82,7 @@ def index(request):
         # fs = FileSystemStorage()
         # filename = fs.save('core/static/files/' + myfile.name, myfile)
         # uploaded_file_url = fs.url(filename)
-        uploaded_file_url = open_file_automodel(
+        uploaded_file_url, period_dates = open_file_automodel(
             myfile.name, item_value, selected_days)
 
         context = {
@@ -91,7 +91,8 @@ def index(request):
             'series': True,
             'filename': myfile.name,
             'data_json': json.dumps(uploaded_file_url),
-            'spinner': 1
+            'spinner': 1,
+            "period_dates": period_dates
         }
 
     return HttpResponse(html_template.render(context, request))
@@ -163,6 +164,11 @@ def open_file_automodel(filename, item_value, periods):
     print(f"Data inicio {start_test}")
     print(f"Data fim {end_test}")
 
+    period_dates = {
+        "start_date": {start_test},
+        "end_date": {end_test},
+    }
+
     df3.Data = pd.to_datetime(df3['date_occurrence'])
     df3.set_index('date_occurrence', inplace=True)
     df3.sort_index(inplace=True)
@@ -170,6 +176,7 @@ def open_file_automodel(filename, item_value, periods):
     plt.figure(figsize=(15, 6))
     plt.grid()
     plt.tight_layout()
+    plt.title(f'Start date: {start_test}/End date: {end_test}')
     plt.xlabel("Date")
     plt.ylabel(field)
     plt.tight_layout()
@@ -184,7 +191,7 @@ def open_file_automodel(filename, item_value, periods):
 
     data = plotarima(n_periods, automodel, df3, field)
 
-    return data
+    return data, period_dates
 
 
 def plotarima(n_periods, automodel, serie, field):
@@ -236,7 +243,7 @@ def plotarima(n_periods, automodel, serie, field):
 
     series = serie[field]
 
-    print(series)
+    print('#### SERIES ####', series)
 
     data_series = series.to_json(orient='index')
 
@@ -250,10 +257,12 @@ def plotarima(n_periods, automodel, serie, field):
         data_serie[str(datetime.fromtimestamp(int(key[:-3])))
                    [:10]] = str(value)
 
-    data_serie = json.dumps(data_serie, indent=4)
+    data_serie = json.dumps(data_serie)
 
     # print(
     #     f'#####$$$$$$$$$$$$$$$$$$$$$$$$$$$$ lower_series.index: {data_serie}')
+
+    period = json.loads(data)
 
     # Create plot
     plt.figure(figsize=(15, 6))
@@ -261,6 +270,8 @@ def plotarima(n_periods, automodel, serie, field):
     # plt.tight_layout()
     plt.plot(serie[field])
     plt.plot(fc_series, color="orange")
+    plt.title(
+        f'Prediction days {n_periods}: {list(period.items())[0][0]} - {list(period.items())[-1][0]}')
     plt.xlabel("Date")
     plt.ylabel(serie[field].name)
     plt.fill_between(lower_series.index, lower_series, upper_series, color="k",
@@ -274,6 +285,9 @@ def plotarima(n_periods, automodel, serie, field):
 
     json_list = []
 
+    # print(
+    #     f'#####$$$$$$$$$$$$$$$$$$$$$$$$$$$$ DATA: {list(period.items())[0][0]}-- {list(period.items())[-1][0]}')
+
     jsonMerged = {**json.loads(data_serie), **json.loads(data)}
 
     for key, value in jsonMerged.items():
@@ -283,8 +297,6 @@ def plotarima(n_periods, automodel, serie, field):
     # print(data)
 
     data = {"data_json": data}
-
-    # print('#########################: ', type(json.dumps(data)))
 
     # html_template = loader.get_template('index.html')
 
