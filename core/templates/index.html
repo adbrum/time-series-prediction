@@ -47,11 +47,14 @@
                                     </div>
                                     {% endif %}
                                     <div class="row">
-                                        <div class="col-xl-2">
+                                        <div class="col-xl-4">
                                             <!-- <input class="form-control" type="file" name="myfile"> -->
-                                            <label for="myfile" class="btn btn-primary">Choose
-                                                file</label>
-                                            <input type="file" name="myfile" id="myfile" style="display:none">
+                                            <label class="btn btn-primary search-file-btn">
+                                                <input type="file" name="myfile" id="myfile" style="display:none">
+                                                <span>Choose
+                                                    file</span>
+                                            </label>
+                                            <span>No file selected</span>
                                         </div>
                                         <div class="col-xl-4">
                                             <select id="select"
@@ -178,7 +181,16 @@
 
     'use strict';
     $(document).ready(function () {
-        $("#btnFetch").click(function () {
+
+        $().ready(function ($) {
+            $('.search-file-btn').children("input").bind('change', function () {
+                var fileName = '';
+                fileName = $(this).val().split("\\").slice(-1)[0];
+                $(this).parent().parent().children("span").html(fileName);
+            })
+        });
+
+        /*$("#btnFetch").click(function () {
             // disable button
             setTimeout(function () {
                 $("#btnFetch").prop("disabled", true);
@@ -188,7 +200,7 @@
             $(this).html(
                 `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`
             );
-        });
+        });*/
 
         setTimeout(function () {
 
