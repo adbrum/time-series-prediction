@@ -39,7 +39,7 @@ def index(request):
     filename = ''
 
     data = {
-        '': '',
+        'Choose the information': 'Choose the information',
         'Tmed (ºC)': 'average_temperature',
         'Tmax (ºC)': 'maximum_temperature',
         'Tmin (ºC)': 'minimum_temperature',
@@ -58,7 +58,6 @@ def index(request):
     }
 
     html_template = loader.get_template('index.html')
-    print('XXXXXXXXXXXXXXXXXXXXXXXXXX. :', request.POST)
 
     if not request.FILES.get('myfile', False):
         if request.method == 'POST':
@@ -69,7 +68,7 @@ def index(request):
             context = {'data': data,  'series': True,
                        'data_json': data_json, 'filename': filename, "period_dates": period_dates}
         else:
-            context = {'data': data,  'series': False, 'spinner': 0}
+            context = {'data': data,  'series': False}
     else:
         SAGRAData.objects.filter(pk=1).delete()
         myfile = request.FILES['myfile']
@@ -82,6 +81,7 @@ def index(request):
         # fs = FileSystemStorage()
         # filename = fs.save('core/static/files/' + myfile.name, myfile)
         # uploaded_file_url = fs.url(filename)
+
         uploaded_file_url, period_dates = open_file_automodel(
             myfile.name, item_value, selected_days)
 
@@ -91,7 +91,6 @@ def index(request):
             'series': True,
             'filename': myfile.name,
             'data_json': json.dumps(uploaded_file_url),
-            'spinner': 1,
             "period_dates": period_dates
         }
 
@@ -176,7 +175,8 @@ def open_file_automodel(filename, item_value, periods):
     plt.figure(figsize=(15, 6))
     plt.grid()
     plt.tight_layout()
-    plt.title(f'Start date: {start_test}/End date: {end_test}')
+    plt.title(
+        f'Period between dates: {start_test} - {end_test}')
     plt.xlabel("Date")
     plt.ylabel(field)
     plt.tight_layout()
@@ -311,7 +311,7 @@ def model_auto_ARIMA(df, field):
                        max_p=4, max_q=4,  # maximum p and q
                        m=12,              # frequency of series
                        d=None,           # let model determine 'd'
-                       seasonal=False,   # No Seasonality
+                       seasonal=True,   # No Seasonality
                        start_P=0,
                        D=1,
                        trace=True,
