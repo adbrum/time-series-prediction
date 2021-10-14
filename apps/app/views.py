@@ -110,6 +110,8 @@ def pages(request):
 
         context['segment'] = load_template
 
+        html_template = loader.get_template('page-400.html')
+
         return HttpResponse(html_template.render(context, request))
 
     except template.TemplateDoesNotExist:
@@ -311,7 +313,7 @@ def model_auto_ARIMA(df, field):
                        max_p=4, max_q=4,  # maximum p and q
                        m=12,              # frequency of series
                        d=None,           # let model determine 'd'
-                       seasonal=True,   # No Seasonality
+                       seasonal=False,   # No Seasonality
                        start_P=0,
                        D=1,
                        trace=True,
