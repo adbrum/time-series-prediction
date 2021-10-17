@@ -36,6 +36,12 @@ from apps.predictions.models import SAGRAData
 
 @login_required(login_url="/login/")
 def index(request):
+    print('#######: ', request.POST)
+    if request.POST.get('validation-switcher'):
+        switch = True
+    else:
+        switch = False
+
     filename = ''
 
     data = {
@@ -64,9 +70,12 @@ def index(request):
             item_value = request.POST.get('item_value')
             selected_days = request.POST.get('selectedDays')
             data_json, period_dates = open_file_automodel(
-                filename, item_value, selected_days)
+                filename, item_value, selected_days, switch)
+
+            data_json = json.dumps(str(data_json))
+
             context = {'data': data,  'series': True,
-                       'data_json': data_json, 'filename': filename, "period_dates": period_dates}
+                       'data_json': json.loads(data_json), 'filename': filename, "period_dates": period_dates}
         else:
             context = {'data': data,  'series': False}
     else:
@@ -83,14 +92,28 @@ def index(request):
         # uploaded_file_url = fs.url(filename)
 
         uploaded_file_url, period_dates = open_file_automodel(
-            myfile.name, item_value, selected_days)
+            myfile.name, item_value, selected_days, switch)
+
+        data_json = json.dumps(
+            str(uploaded_file_url).replace('[', '').replace(']', ''))
+
+        # teste = str(uploaded_file_url).replace(
+        #     '[', '').replace(']', '')
+
+        # print('$$$$$$$$: ', type(json.dumps(teste)))
+
+        print('###################################### LODS: ',
+              type((uploaded_file_url[0:5])))
+
+        print('###################################### DUMPS: ',
+              type(json.loads(data_json)))
 
         context = {
             'data': data,
             '\  ': uploaded_file_url,
             'series': True,
             'filename': myfile.name,
-            'data_json': json.dumps(uploaded_file_url),
+            'data_json': uploaded_file_url[0:5],
             "period_dates": period_dates
         }
 
@@ -124,7 +147,7 @@ def pages(request):
         return HttpResponse(html_template.render(context, request))
 
 
-def open_file_automodel(filename, item_value, periods):
+def open_file_automodel(filename, item_value, periods, switch):
 
     if not SAGRAData.objects.filter(pk=1).exists():
         df3 = pd.read_excel(f'core/static/files/{filename}')
@@ -189,7 +212,7 @@ def open_file_automodel(filename, item_value, periods):
     )
     # plt.show()
 
-    data_order, automodel = model_auto_ARIMA(df3, field)
+    data_order, automodel = model_auto_ARIMA(df3, field, switch)
 
     data = plotarima(n_periods, automodel, df3, field)
 
@@ -245,7 +268,7 @@ def plotarima(n_periods, automodel, serie, field):
 
     series = serie[field]
 
-    print('#### SERIES ####', series)
+    # print('#### SERIES ####', series)
 
     data_series = series.to_json(orient='index')
 
@@ -293,12 +316,21 @@ def plotarima(n_periods, automodel, serie, field):
     jsonMerged = {**json.loads(data_serie), **json.loads(data)}
 
     for key, value in jsonMerged.items():
-        json_list.append({'y': key, 'a': value})
+        json_list.append({"y": key, "a": value})
 
-    data = json.dumps(jsonMerged)
+    # data = json.dumps(jsonMerged)
     # print(data)
 
-    data = {"data_json": data}
+    # data = {"data_json": data}
+
+    # print('JASON FORMAT: ', json_list)
+    # print('JASON FORMAT: ', str(json_list).replace('[', '').replace(']', ''))
+
+    # context = {}
+
+    # context["data"] = ','.join([str(i) for i in json_list])
+
+    # print(json.dumps(context))
 
     # html_template = loader.get_template('index.html')
 
@@ -307,22 +339,24 @@ def plotarima(n_periods, automodel, serie, field):
     return json_list
 
 
-def model_auto_ARIMA(df, field):
+def model_auto_ARIMA(df, field, switch):
     model = auto_arima(df[field], start_p=1, start_q=1,
                        test='adf',       # use adftest to find optimal 'd'
-                       max_p=4, max_q=4,  # maximum p and q
+                       max_p=3, max_q=3,  # maximum p and q
                        m=12,              # frequency of series
                        d=None,           # let model determine 'd'
-                       seasonal=False,   # No Seasonality
+                       seasonal=switch,   # No Seasonality
                        start_P=0,
                        D=1,
                        trace=True,
                        error_action='ignore',
                        suppress_warnings=True,
-                       stepwise=False)
+                       stepwise=True
+                       )
 
     model.summary()
-    print(model.aic())
+    # print(model.aic())
+    print(model.summary())
 
     get_parametes = model.get_params()
 
