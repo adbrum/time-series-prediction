@@ -102,11 +102,11 @@ def index(request):
 
         # print('$$$$$$$$: ', type(json.dumps(teste)))
 
-        print('###################################### LODS: ',
-              type((uploaded_file_url[0:5])))
+        # print('###################################### LODS: ',
+        #       type((uploaded_file_url[0:5])))
 
-        print('###################################### DUMPS: ',
-              type(json.loads(data_json)))
+        # print('###################################### DUMPS: ',
+        #       type(json.loads(data_json)))
 
         context = {
             'data': data,
@@ -148,9 +148,22 @@ def pages(request):
 
 
 def open_file_automodel(filename, item_value, periods, switch):
+    from pathlib import Path
+    file_path = Path(filename)
+    file_extension = file_path.suffix.lower()[1:]
 
     if not SAGRAData.objects.filter(pk=1).exists():
-        df3 = pd.read_excel(f'core/static/files/{filename}')
+
+        if file_extension == 'xlsx':
+            df3 = pd.read_excel(
+                f'core/static/files/{filename}', engine='openpyxl')
+        elif file_extension == 'xls':
+            df3 = pd.read_excel(f'core/static/files/{filename}')
+        elif file_extension == 'csv':
+            df3 = pd.read_csv(f'core/static/files/{filename}')
+        else:
+            raise Exception("File not supported")
+        #df3 = pd.read_excel(f'core/static/files/{filename}')
 
         df3.rename(columns={
             'EMA': 'EMA',
