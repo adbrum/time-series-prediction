@@ -87,9 +87,9 @@ def index(request):
         item_value = request.POST.get('item_value')
         selected_days = request.POST.get('selectedDays')
 
-        # fs = FileSystemStorage()
-        # filename = fs.save('core/static/files/' + myfile.name, myfile)
-        # uploaded_file_url = fs.url(filename)
+        fs = FileSystemStorage()
+        filename = fs.save('core/static/files/' + myfile.name, myfile)
+        uploaded_file_url = fs.url(filename)
 
         uploaded_file_url, period_dates = open_file_automodel(
             myfile.name, item_value, selected_days, switch)
