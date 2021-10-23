@@ -340,6 +340,9 @@ def plotarima(n_periods, automodel, serie, field):
 
 
 def model_auto_ARIMA(df, field, switch):
+    D = 0
+    if switch:
+        D = 1
     model = auto_arima(df[field], start_p=1, start_q=1,
                        test='adf',       # use adftest to find optimal 'd'
                        max_p=3, max_q=3,  # maximum p and q
@@ -347,7 +350,7 @@ def model_auto_ARIMA(df, field, switch):
                        d=None,           # let model determine 'd'
                        seasonal=switch,   # No Seasonality
                        start_P=0,
-                       D=1,
+                       D=D,
                        trace=True,
                        error_action='ignore',
                        suppress_warnings=True,
