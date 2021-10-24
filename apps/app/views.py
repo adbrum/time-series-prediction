@@ -185,10 +185,10 @@ def open_file_automodel(filename, item_value, periods, switch):
             'ET0 (mm)': 'ET0',
         }, inplace=True, errors='raise')
 
-        # engine = create_engine('sqlite:///db.sqlite3')
+        engine = create_engine('sqlite:///db.sqlite3')
 
-        engine = create_engine(
-            'postgresql+psycopg2://postgres:postgres@sagracharts.herokuapp.com/SAGRAData')
+        # engine = create_engine(
+        #     'postgresql+psycopg2://postgres:postgres@sagracharts.herokuapp.com/SAGRAData')
 
         df3.to_sql(SAGRAData._meta.db_table,
                    if_exists='replace', con=engine, index_label='id', index=True)
