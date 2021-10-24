@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+import glob
 from django import template
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
@@ -36,6 +37,7 @@ from apps.predictions.models import SAGRAData
 
 @login_required(login_url="/login/")
 def index(request):
+
     print('#######: ', request.POST)
     if request.POST.get('validation-switcher'):
         switch = True
@@ -148,22 +150,20 @@ def pages(request):
 
 
 def open_file_automodel(filename, item_value, periods, switch):
+    import os
+    import glob
+
     from pathlib import Path
+
     file_path = Path(filename)
     file_extension = file_path.suffix.lower()[1:]
 
     if not SAGRAData.objects.filter(pk=1).exists():
 
-        if file_extension == 'xlsx':
-            df3 = pd.read_excel(
-                f'core/static/files/{filename}', engine='openpyxl')
-        elif file_extension == 'xls':
+        df3 = pd.read_excel(f'core/static/files/{filename}', engine='openpyxl')
+
+        if file_extension == 'xls':
             df3 = pd.read_excel(f'core/static/files/{filename}')
-        elif file_extension == 'csv':
-            df3 = pd.read_csv(f'core/static/files/{filename}')
-        else:
-            raise Exception("File not supported")
-        #df3 = pd.read_excel(f'core/static/files/{filename}')
 
         df3.rename(columns={
             'EMA': 'EMA',
@@ -185,11 +185,15 @@ def open_file_automodel(filename, item_value, periods, switch):
             'ET0 (mm)': 'ET0',
         }, inplace=True, errors='raise')
 
-        engine = create_engine('sqlite:///db.sqlite3')
+        # engine = create_engine('sqlite:///db.sqlite3')
+
+        engine = create_engine(
+            'postgresql+psycopg2://postgres:postgres@localhost/SAGRAData')
 
         df3.to_sql(SAGRAData._meta.db_table,
                    if_exists='replace', con=engine, index_label='id', index=True)
     else:
+        print('BD SAGRA')
         df3 = pd.DataFrame(list(SAGRAData.objects.all().values()))
 
     field = item_value
@@ -228,6 +232,11 @@ def open_file_automodel(filename, item_value, periods, switch):
     data_order, automodel = model_auto_ARIMA(df3, field, switch)
 
     data = plotarima(n_periods, automodel, df3, field)
+
+    # remove all excell files
+    # files = glob.glob('core/static/files/*.xls*')
+    # for f in files:
+    #     os.remove(f)
 
     return data, period_dates
 
