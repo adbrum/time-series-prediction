@@ -22,6 +22,8 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', "sagracharts.herokuapp.com",
                  config('SERVER', default='127.0.0.1')]
 
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -73,34 +75,15 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-# default_dburl = 'sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')
-
-
-host = 'localhost'
-user = 'adbrum'
-password = 'adbrum'
-database_name = 'SAGRAData'
-
-database_url = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
-    host=host,
-    user=user,
-    password=password,
-    database_name=database_name,
+default_dburl = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
+    host=config('HOST'),
+    user=config('USER'),
+    password=config('PASSWORD'),
+    database_name=config('DATABASE_NAME'),
 )
 DATABASES = {
-    'default': config('DATABASE_URL', default=database_url, cast=dburl)
+    'default': config('DATABASE_URL', default=default_dburl, cast=dburl)
 }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'SAGRAData',
-#         'USER': 'adbrum',
-#         'PASSWORD': 'adbrum',
-#         'HOST': '127.0.0.1',
-#         'PORT': '5432',
-#     }
-# }
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators

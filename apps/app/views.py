@@ -34,6 +34,9 @@ import statsmodels.api as sm
 import json
 import os
 
+from multiprocessing import cpu_count
+from joblib import Parallel
+from joblib import delayed
 
 from apps.predictions.models import SAGRAData
 
@@ -70,11 +73,36 @@ def index(request):
 
     html_template = loader.get_template('index.html')
 
-    if not request.FILES.get('myfile', False):
+    if request.FILES.get('myfile', False):
+        SAGRAData.objects.all().delete()
 
+        # SAGRAData.objects.filter(pk=1).delete()
+
+        myfile = request.FILES['myfile']
+
+        item_value = request.POST.get('item_value')
+        selected_days = request.POST.get('selectedDays')
+
+        fs = FileSystemStorage()
+        filename = fs.save('core/static/files/' + myfile.name, myfile)
+        uploaded_file_url = fs.url(filename)
+
+        uploaded_file_url, period_dates = open_file_automodel(
+            myfile.name, item_value, selected_days, switch)
+
+        data_json = json.dumps(
+            str(uploaded_file_url).replace('[', '').replace(']', ''))
+
+        context = {
+            'data': data,
+            '\  ': uploaded_file_url,
+            'series': True,
+            'filename': myfile.name,
+            'data_json': uploaded_file_url[0:5],
+            "period_dates": period_dates
+        }
+    else:
         if request.method == 'POST':
-            print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$: ',
-                  request.FILES.get('myfile'))
             item_value = request.POST.get('item_value')
             selected_days = request.POST.get('selectedDays')
             data_json, period_dates = open_file_automodel(
@@ -90,48 +118,6 @@ def index(request):
             }
         else:
             context = {'data': data,  'series': False}
-    else:
-
-        print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$: ')
-        SAGRAData.objects.filter(pk=1).delete()
-        myfile = request.FILES['myfile']
-
-        print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$: ', myfile)
-
-        # filename = myfile.name
-
-        item_value = request.POST.get('item_value')
-        selected_days = request.POST.get('selectedDays')
-
-        fs = FileSystemStorage()
-        filename = fs.save('core/static/files/' + myfile.name, myfile)
-        uploaded_file_url = fs.url(filename)
-
-        uploaded_file_url, period_dates = open_file_automodel(
-            myfile.name, item_value, selected_days, switch)
-
-        data_json = json.dumps(
-            str(uploaded_file_url).replace('[', '').replace(']', ''))
-
-        # teste = str(uploaded_file_url).replace(
-        #     '[', '').replace(']', '')
-
-        # print('$$$$$$$$: ', type(json.dumps(teste)))
-
-        # print('###################################### LODS: ',
-        #       type((uploaded_file_url[0:5])))
-
-        # print('###################################### DUMPS: ',
-        #       type(json.loads(data_json)))
-
-        context = {
-            'data': data,
-            '\  ': uploaded_file_url,
-            'series': True,
-            'filename': myfile.name,
-            'data_json': uploaded_file_url[0:5],
-            "period_dates": period_dates
-        }
 
     return HttpResponse(html_template.render(context, request))
 
@@ -164,22 +150,29 @@ def pages(request):
 
 
 def open_file_automodel(filename, item_value, periods, switch):
-    # from pathlib import Path
+    from pathlib import Path
 
-    # file_path = Path(filename)
-    # file_extension = file_path.suffix.lower()[1:]
+    file_path = Path(filename)
+    file_extension = file_path.suffix.lower()[1:]
 
-    print('DADOS SAGRA', SAGRAData.objects.filter(pk=1).values())
+    # print('DADOS SAGRA::', SAGRAData.objects.filter(pk=1).values())
 
-    if not SAGRAData.objects.filter(pk=1).exists():
+    if SAGRAData.objects.exists():
+
+        df3 = pd.DataFrame.from_records(SAGRAData.objects.all().values())
+
+        df3 = df3.loc[:, ~df3.columns.str.contains('^id')]
+
+    else:
+        SAGRAData.objects.all().delete()
 
         print('TEM nome do ficheiro')
 
         df3 = pd.read_excel(f'core/static/files/{filename}')
 
-        # if file_extension == 'xlsx':
-        #     df3 = pd.read_excel(
-        #         f'core/static/files/{filename}', engine='openpyxl')
+        if file_extension == 'xlsx':
+            df3 = pd.read_excel(
+                f'core/static/files/{filename}', engine='openpyxl')
 
         df3.rename(columns={
             'EMA': 'EMA',
@@ -201,31 +194,60 @@ def open_file_automodel(filename, item_value, periods, switch):
             'ET0 (mm)': 'ET0',
         }, inplace=True, errors='raise')
 
+        row_iter = df3.iterrows()
+
+        objs = [
+
+            SAGRAData(
+                EMA=row['EMA'],
+                date_occurrence=row['date_occurrence'],
+                average_temperature=row['average_temperature'],
+                maximum_temperature=row['maximum_temperature'],
+                minimum_temperature=row['minimum_temperature'],
+                average_humidity=row['average_humidity'],
+                maximum_humidity=row['maximum_humidity'],
+                minimum_humidity=row['minimum_humidity'],
+                average_wind_speed=row['average_wind_speed'],
+                maximum_wind_speed=row['maximum_wind_speed'],
+                average_grass_temperature=row['average_grass_temperature'],
+                maximum_grass_temperature=row['maximum_grass_temperature'],
+                minimum_grass_temperature=row['minimum_grass_temperature'],
+                rainfall=row['rainfall'],
+                RSG=row['RSG'],
+                DV=row['DV'],
+                ET0=row['ET0']
+            )
+            for index, row in row_iter
+
+        ]
+
+        SAGRAData.objects.bulk_create(objs)
+
         # engine = create_engine('sqlite:///db.sqlite3')
 
-        host = settings.DATABASES['default']['HOST']
-        user = settings.DATABASES['default']['USER']
-        password = settings.DATABASES['default']['PASSWORD']
-        database_name = settings.DATABASES['default']['NAME']
+        # host = settings.DATABASES['default']['HOST']
+        # user = settings.DATABASES['default']['USER']
+        # password = settings.DATABASES['default']['PASSWORD']
+        # database_name = settings.DATABASES['default']['NAME']
 
-        database_url = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
-            host=host,
-            user=user,
-            password=password,
-            database_name=database_name,
-        )
+        # database_url = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
+        #     host=host,
+        #     user=user,
+        #     password=password,
+        #     database_name=database_name,
+        # )
 
-        engine = create_engine(database_url, echo=False)
+        # engine = create_engine(database_url, echo=False)
 
-        # engine = create_engine(
-        #     'postgresql+psycopg2://adbrum:adbrum@localhost/SAGRAData')
+        # # engine = create_engine(
+        # #     'postgresql+psycopg2://adbrum:adbrum@localhost/SAGRAData')
 
-        df3.to_sql(SAGRAData._meta.db_table,
-                   if_exists='replace', con=engine, index_label='id', index=True)
+        # df3.to_sql(SAGRAData._meta.db_table,
+        #            if_exists='replace', con=engine, index_label='id', index=True)
 
-    else:
-        print('BD SAGRA')
-        df3 = pd.DataFrame(list(SAGRAData.objects.all().values()))
+        print('XXXXXXXXXXXXXXXXXXXXXXXX BD SAGRA DF3 2', df3)
+
+    print(df3)
 
     field = item_value
     n_periods = int(periods)
