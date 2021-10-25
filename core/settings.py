@@ -22,7 +22,7 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', "sagracharts.herokuapp.com",
                  config('SERVER', default='127.0.0.1')]
 
-DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+# DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # Application definition
 
