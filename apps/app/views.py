@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 import glob
 from django import template
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import loader
@@ -31,6 +32,8 @@ import numpy as np
 import seaborn as sns
 import statsmodels.api as sm
 import json
+import os
+
 
 from apps.predictions.models import SAGRAData
 
@@ -68,7 +71,10 @@ def index(request):
     html_template = loader.get_template('index.html')
 
     if not request.FILES.get('myfile', False):
+
         if request.method == 'POST':
+            print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$: ',
+                  request.FILES.get('myfile'))
             item_value = request.POST.get('item_value')
             selected_days = request.POST.get('selectedDays')
             data_json, period_dates = open_file_automodel(
@@ -76,13 +82,21 @@ def index(request):
 
             data_json = json.dumps(str(data_json))
 
-            context = {'data': data,  'series': True,
-                       'data_json': json.loads(data_json), 'filename': filename, "period_dates": period_dates}
+            context = {
+                'data': data,  'series': True,
+                'data_json': json.loads(data_json),
+                'filename': filename,
+                "period_dates": period_dates
+            }
         else:
             context = {'data': data,  'series': False}
     else:
+
+        print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$: ')
         SAGRAData.objects.filter(pk=1).delete()
         myfile = request.FILES['myfile']
+
+        print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$: ', myfile)
 
         # filename = myfile.name
 
@@ -150,20 +164,22 @@ def pages(request):
 
 
 def open_file_automodel(filename, item_value, periods, switch):
-    import os
-    import glob
+    # from pathlib import Path
 
-    from pathlib import Path
+    # file_path = Path(filename)
+    # file_extension = file_path.suffix.lower()[1:]
 
-    file_path = Path(filename)
-    file_extension = file_path.suffix.lower()[1:]
+    print('DADOS SAGRA', SAGRAData.objects.filter(pk=1).values())
 
     if not SAGRAData.objects.filter(pk=1).exists():
 
-        df3 = pd.read_excel(f'core/static/files/{filename}', engine='openpyxl')
+        print('TEM nome do ficheiro')
 
-        if file_extension == 'xls':
-            df3 = pd.read_excel(f'core/static/files/{filename}')
+        df3 = pd.read_excel(f'core/static/files/{filename}')
+
+        # if file_extension == 'xlsx':
+        #     df3 = pd.read_excel(
+        #         f'core/static/files/{filename}', engine='openpyxl')
 
         df3.rename(columns={
             'EMA': 'EMA',
@@ -185,13 +201,28 @@ def open_file_automodel(filename, item_value, periods, switch):
             'ET0 (mm)': 'ET0',
         }, inplace=True, errors='raise')
 
-        engine = create_engine('sqlite:///db.sqlite3')
+        # engine = create_engine('sqlite:///db.sqlite3')
+
+        host = settings.DATABASES['default']['HOST']
+        user = settings.DATABASES['default']['USER']
+        password = settings.DATABASES['default']['PASSWORD']
+        database_name = settings.DATABASES['default']['NAME']
+
+        database_url = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
+            host=host,
+            user=user,
+            password=password,
+            database_name=database_name,
+        )
+
+        engine = create_engine(database_url, echo=False)
 
         # engine = create_engine(
-        #     'postgresql+psycopg2://postgres:postgres@sagracharts.herokuapp.com/SAGRAData')
+        #     'postgresql+psycopg2://adbrum:adbrum@localhost/SAGRAData')
 
         df3.to_sql(SAGRAData._meta.db_table,
                    if_exists='replace', con=engine, index_label='id', index=True)
+
     else:
         print('BD SAGRA')
         df3 = pd.DataFrame(list(SAGRAData.objects.all().values()))
@@ -234,9 +265,9 @@ def open_file_automodel(filename, item_value, periods, switch):
     data = plotarima(n_periods, automodel, df3, field)
 
     # remove all excell files
-    # files = glob.glob('core/static/files/*.xls*')
-    # for f in files:
-    #     os.remove(f)
+    files = glob.glob('core/static/files/*.xls*')
+    for f in files:
+        os.remove(f)
 
     return data, period_dates
 
