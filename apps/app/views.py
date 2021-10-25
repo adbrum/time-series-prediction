@@ -40,6 +40,10 @@ from joblib import delayed
 
 from apps.predictions.models import SAGRAData
 
+from teste import *
+
+df3 = None
+
 
 @login_required(login_url="/login/")
 def index(request):
@@ -150,6 +154,8 @@ def pages(request):
 
 
 def open_file_automodel(filename, item_value, periods, switch):
+    global df3
+
     from pathlib import Path
 
     file_path = Path(filename)
@@ -223,6 +229,8 @@ def open_file_automodel(filename, item_value, periods, switch):
 
         SAGRAData.objects.bulk_create(objs)
 
+        # fit_parallel_shared(5)
+
         # engine = create_engine('sqlite:///db.sqlite3')
 
         # host = settings.DATABASES['default']['HOST']
@@ -282,7 +290,7 @@ def open_file_automodel(filename, item_value, periods, switch):
     )
     # plt.show()
 
-    data_order, automodel = model_auto_ARIMA(df3, field, switch)
+    automodel = model_auto_ARIMA(df3, field, switch)
 
     data = plotarima(n_periods, automodel, df3, field)
 
@@ -418,32 +426,76 @@ def model_auto_ARIMA(df, field, switch):
     D = 0
     if switch:
         D = 1
-    model = auto_arima(df[field], start_p=1, start_q=1,
-                       test='adf',       # use adftest to find optimal 'd'
-                       max_p=3, max_q=3,  # maximum p and q
-                       m=12,              # frequency of series
-                       d=None,           # let model determine 'd'
-                       seasonal=switch,   # No Seasonality
-                       start_P=0,
-                       D=D,
-                       trace=True,
-                       error_action='ignore',
-                       suppress_warnings=True,
-                       stepwise=True
-                       )
+    model = _fit_func(df, field, switch)
+    # model = auto_arima(df[field], start_p=1, start_q=1,
+    #                    test='adf',       # use adftest to find optimal 'd'
+    #                    max_p=3, max_q=3,  # maximum p and q
+    #                    m=12,              # frequency of series
+    #                    d=None,           # let model determine 'd'
+    #                    seasonal=switch,   # No Seasonality
+    #                    start_P=0,
+    #                    D=D,
+    #                    trace=True,
+    #                    error_action='ignore',
+    #                    suppress_warnings=True,
+    #                    stepwise=True,
+    #                    sarimax_kwargs={'simple_differencing': True}
+    #                    )
 
-    model.summary()
-    # print(model.aic())
-    print(model.summary())
+    # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!: ', pd.DataFrame(model))
 
-    get_parametes = model.get_params()
+    # model.summary()
+    # # print(model.aic())
+    # print(model.summary())
 
-    order = get_parametes.get('order')
-    seasonal_order = get_parametes.get('seasonal_order')
+    # get_parametes = model.get_params()
 
-    data_order = {
-        "order": order,
-        "seasonal_order": seasonal_order
-    }
+    # order = get_parametes.get('order')
+    # seasonal_order = get_parametes.get('seasonal_order')
 
-    return data_order, model
+    # data_order = {
+    #     "order": order,
+    #     "seasonal_order": seasonal_order
+    # }
+
+    return model
+
+
+def _fit_func(df, field, switch):
+    D = 0
+    if switch:
+        D = 1
+    model = auto_arima(
+        df[field], start_p=1, start_q=1,
+        test='adf',       # use adftest to find optimal 'd'
+        max_p=3, max_q=3,  # maximum p and q
+        m=1,              # frequency of series
+        d=None,           # let model determine 'd'
+        seasonal=switch,   # No Seasonality
+        start_P=0,
+        D=D,
+        trace=True,
+        error_action='ignore',
+        suppress_warnings=True,
+        stepwise=True,
+        sarimax_kwargs={'simple_differencing': True}
+    )  # new in 1.3.0
+
+    return model
+
+
+@timed
+def fit_serial(n, df, field, switch):
+    fits = []
+    for i in range(n):
+        fits.append(_fit_func(df, field, switch))
+    return fits
+
+
+def timed(func):
+    def _wrapper(*args, **kwargs):
+        start = time.time()
+        res = func(*args, **kwargs)
+        print(f"Completed {func.__name__} in {time.time() - start:.3f} sec")
+        return res
+    return _wrapper
