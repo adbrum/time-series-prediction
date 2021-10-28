@@ -33,6 +33,8 @@ import seaborn as sns
 import statsmodels.api as sm
 import json
 import os
+import time
+from multiprocessing import Pool, cpu_count, Array
 
 from multiprocessing import cpu_count
 from joblib import Parallel
@@ -413,6 +415,15 @@ def plotarima(n_periods, automodel, serie, field):
     return json_list
 
 
+def timed(func):
+    def _wrapper(*args, **kwargs):
+        start = time.time()
+        res = func(*args, **kwargs)
+        print(f"Completed {func.__name__} in {time.time() - start:.3f} sec")
+        return res
+    return _wrapper
+
+
 @timed
 def model_auto_ARIMA(df):
     # D = 0
@@ -457,12 +468,3 @@ def fit_parallel_nv(n, data):
     pool = Pool(cpu_count())
     res = pool.map_async(_fit_func, (data for i in range(n)))
     return res.get()
-
-
-def timed(func):
-    def _wrapper(*args, **kwargs):
-        start = time.time()
-        res = func(*args, **kwargs)
-        print(f"Completed {func.__name__} in {time.time() - start:.3f} sec")
-        return res
-    return _wrapper
