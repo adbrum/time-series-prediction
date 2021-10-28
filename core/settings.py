@@ -72,6 +72,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
@@ -81,6 +83,12 @@ default_dburl = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.for
     password=config('PASSWORD'),
     database_name=config('DATABASE_NAME'),
 )
+# default_dburl = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
+#     host='172.20.0.2',
+#     user='adbrum',
+#     password='adbrum',
+#     database_name='SAGRAData',
+# )
 DATABASES = {
     'default': config('DATABASE_URL', default=default_dburl, cast=dburl)
 }

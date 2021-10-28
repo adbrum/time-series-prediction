@@ -1,28 +1,21 @@
-version: '3.8'
+version: "3.9"
+
 services:
-  appseed-app:
-    container_name: appseed_app
-    restart: always
-    env_file: .env
-    build: .
-    networks:
-      - db_network
-      - web_network
-  nginx:
-    container_name: nginx
-    restart: always
-    image: "nginx:latest"
-    ports:
-      - "85:85"
+  db:
+    image: postgres
     volumes:
-      - ./nginx:/etc/nginx/conf.d
-    networks:
-      - web_network
-    depends_on: 
-      - appseed-app
-networks:
-  db_network:
-    driver: bridge
-  web_network:
-    driver: bridge
- 
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=adbrum
+      - POSTGRES_USER=adbrum
+      - POSTGRES_PASSWORD=adbrum
+      - POSTGRES_DB=SAGRAData
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db

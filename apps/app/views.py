@@ -48,7 +48,6 @@ df3 = None
 @login_required(login_url="/login/")
 def index(request):
 
-    print('#######: ', request.POST)
     if request.POST.get('validation-switcher'):
         switch = True
     else:
@@ -94,8 +93,8 @@ def index(request):
         uploaded_file_url, period_dates = open_file_automodel(
             myfile.name, item_value, selected_days, switch)
 
-        data_json = json.dumps(
-            str(uploaded_file_url).replace('[', '').replace(']', ''))
+        # data_json = json.dumps(
+        #     str(uploaded_file_url).replace('[', '').replace(']', ''))
 
         context = {
             'data': data,
@@ -154,7 +153,7 @@ def pages(request):
 
 
 def open_file_automodel(filename, item_value, periods, switch):
-    global df3
+    #global df3
 
     from pathlib import Path
 
@@ -165,14 +164,26 @@ def open_file_automodel(filename, item_value, periods, switch):
 
     if SAGRAData.objects.exists():
 
-        df3 = pd.DataFrame.from_records(SAGRAData.objects.all().values())
+        print('NÂO TEM nome do ficheiro XXXXXXXXXXXXXXXXXXXXXXXXXXX')
+
+        df3 = pd.DataFrame.from_records(SAGRAData.objects.all().values(
+            'EMA', 'date_occurrence', 'average_temperature', 'maximum_temperature',
+            'minimum_temperature', 'average_humidity', 'maximum_humidity',
+            'minimum_humidity', 'RSG', 'DV', 'average_wind_speed',
+            'maximum_wind_speed', 'rainfall', 'average_grass_temperature',
+            'maximum_grass_temperature', 'minimum_grass_temperature', 'ET0'))
 
         df3 = df3.loc[:, ~df3.columns.str.contains('^id')]
+
+        print('XXXXXXXXXXXXXXXXXXXXXXXXXX ', df3.columns)
 
     else:
         SAGRAData.objects.all().delete()
 
-        print('TEM nome do ficheiro')
+        os.system(
+            "python manage.py sqlsequencereset predictions_sagradata")
+
+        print('TEM nome do ficheiro XXXXXXXXXXXXXXXXXXXXXXXXXXX')
 
         df3 = pd.read_excel(f'core/static/files/{filename}')
 
@@ -213,14 +224,14 @@ def open_file_automodel(filename, item_value, periods, switch):
                 average_humidity=row['average_humidity'],
                 maximum_humidity=row['maximum_humidity'],
                 minimum_humidity=row['minimum_humidity'],
+                RSG=row['RSG'],
+                DV=row['DV'],
                 average_wind_speed=row['average_wind_speed'],
                 maximum_wind_speed=row['maximum_wind_speed'],
+                rainfall=row['rainfall'],
                 average_grass_temperature=row['average_grass_temperature'],
                 maximum_grass_temperature=row['maximum_grass_temperature'],
                 minimum_grass_temperature=row['minimum_grass_temperature'],
-                rainfall=row['rainfall'],
-                RSG=row['RSG'],
-                DV=row['DV'],
                 ET0=row['ET0']
             )
             for index, row in row_iter
@@ -229,33 +240,7 @@ def open_file_automodel(filename, item_value, periods, switch):
 
         SAGRAData.objects.bulk_create(objs)
 
-        # fit_parallel_shared(5)
-
-        # engine = create_engine('sqlite:///db.sqlite3')
-
-        # host = settings.DATABASES['default']['HOST']
-        # user = settings.DATABASES['default']['USER']
-        # password = settings.DATABASES['default']['PASSWORD']
-        # database_name = settings.DATABASES['default']['NAME']
-
-        # database_url = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
-        #     host=host,
-        #     user=user,
-        #     password=password,
-        #     database_name=database_name,
-        # )
-
-        # engine = create_engine(database_url, echo=False)
-
-        # # engine = create_engine(
-        # #     'postgresql+psycopg2://adbrum:adbrum@localhost/SAGRAData')
-
-        # df3.to_sql(SAGRAData._meta.db_table,
-        #            if_exists='replace', con=engine, index_label='id', index=True)
-
-        print('XXXXXXXXXXXXXXXXXXXXXXXX BD SAGRA DF3 2', df3)
-
-    print(df3)
+    print('XXXXXXXXXXXXXXXXXXXXXXXXXX ', df3.columns)
 
     field = item_value
     n_periods = int(periods)
@@ -271,8 +256,9 @@ def open_file_automodel(filename, item_value, periods, switch):
         "end_date": {end_test},
     }
 
-    df3.Data = pd.to_datetime(df3['date_occurrence'])
+    # df3.Data = pd.to_datetime(df3['date_occurrence'])
     df3.set_index('date_occurrence', inplace=True)
+    df3 = df3.loc[:, ~df3.columns.str.contains('^id')]
     df3.sort_index(inplace=True)
     df3.head()
     plt.figure(figsize=(15, 6))
@@ -290,7 +276,14 @@ def open_file_automodel(filename, item_value, periods, switch):
     )
     # plt.show()
 
-    automodel = model_auto_ARIMA(df3, field, switch)
+    if switch:
+        automodel = fit_parallel_nv(1, df3[field])
+        for i in automodel:
+            automodel = i
+    else:
+        automodel = model_auto_ARIMA(df3[field])
+
+    # print("KKKKKKKK: ", pd.DataFrame(automodel))
 
     data = plotarima(n_periods, automodel, df3, field)
 
@@ -422,58 +415,37 @@ def plotarima(n_periods, automodel, serie, field):
     return json_list
 
 
-def model_auto_ARIMA(df, field, switch):
-    D = 0
-    if switch:
-        D = 1
-    model = _fit_func(df, field, switch)
-    # model = auto_arima(df[field], start_p=1, start_q=1,
-    #                    test='adf',       # use adftest to find optimal 'd'
-    #                    max_p=3, max_q=3,  # maximum p and q
-    #                    m=12,              # frequency of series
-    #                    d=None,           # let model determine 'd'
-    #                    seasonal=switch,   # No Seasonality
-    #                    start_P=0,
-    #                    D=D,
-    #                    trace=True,
-    #                    error_action='ignore',
-    #                    suppress_warnings=True,
-    #                    stepwise=True,
-    #                    sarimax_kwargs={'simple_differencing': True}
-    #                    )
+@timed
+def model_auto_ARIMA(df):
+    # D = 0
+    # if switch:
+    #     D = 1
+    model = auto_arima(df, start_p=1, start_q=1,
+                       test='adf',       # use adftest to find optimal 'd'
+                       #    max_p=3, max_q=3,  # maximum p and q
+                       #   m=12,              # frequency of series
+                       #   d=None,           # let model determine 'd'
+                       seasonal=False,   # No Seasonality
+                       start_P=0,
+                       #    D=D,
+                       trace=True,
+                       error_action='ignore',
+                       suppress_warnings=True,
+                       stepwise=True,
+                       )
 
-    # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!: ', pd.DataFrame(model))
-
-    # model.summary()
-    # # print(model.aic())
-    # print(model.summary())
-
-    # get_parametes = model.get_params()
-
-    # order = get_parametes.get('order')
-    # seasonal_order = get_parametes.get('seasonal_order')
-
-    # data_order = {
-    #     "order": order,
-    #     "seasonal_order": seasonal_order
-    # }
+    print(model.summary)
 
     return model
 
 
-def _fit_func(df, field, switch):
-    D = 0
-    if switch:
-        D = 1
-    model = auto_arima(
-        df[field], start_p=1, start_q=1,
-        test='adf',       # use adftest to find optimal 'd'
-        max_p=3, max_q=3,  # maximum p and q
-        m=1,              # frequency of series
-        d=None,           # let model determine 'd'
-        seasonal=switch,   # No Seasonality
-        start_P=0,
-        D=D,
+def _fit_func(y):
+    return auto_arima(
+        y,
+        test='adf',
+        seasonal=True,
+        m=12,
+        # D=1,
         trace=True,
         error_action='ignore',
         suppress_warnings=True,
@@ -481,15 +453,12 @@ def _fit_func(df, field, switch):
         sarimax_kwargs={'simple_differencing': True}
     )  # new in 1.3.0
 
-    return model
-
 
 @timed
-def fit_serial(n, df, field, switch):
-    fits = []
-    for i in range(n):
-        fits.append(_fit_func(df, field, switch))
-    return fits
+def fit_parallel_nv(n, data):
+    pool = Pool(cpu_count())
+    res = pool.map_async(_fit_func, (data for i in range(n)))
+    return res.get()
 
 
 def timed(func):
