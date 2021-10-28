@@ -40,8 +40,6 @@ from joblib import delayed
 
 from apps.predictions.models import SAGRAData
 
-from teste import *
-
 df3 = None
 
 
