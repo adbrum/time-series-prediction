@@ -51,9 +51,9 @@
                                             <!-- <input class="form-control" type="file" name="myfile"> -->
                                             <label id="btnChoose" class="btn btn-primary search-file-btn">
                                                 <input type="file" name="myfile" id="myfile" style="display:none">
-                                                <span>Choose file</span>
+                                                <span>Escolher ficheiro</span>
                                             </label>
-                                            <span>No file selected</span>
+                                            <span>Nenhum ficheiro</span>
                                         </div>
                                         <div class="col-xl-2">
                                             <select id="select"
@@ -72,7 +72,7 @@
                                                 name="selectedDays" id="selectedDays"
                                                 aria-label="Exemplo de select com botão addon" disabled>
                                                 <optgroup label="graphs">
-                                                    <option selected>Prediction days</option>
+                                                    <option selected>Dias previsões</option>
                                                     <option value="10">10</option>
                                                     <option value="20">20</option>
                                                     <option value="30">30</option>
@@ -87,11 +87,11 @@
                                                         name="validation-switcher" id="switch-1">
                                                     <label for="switch-1" class="cr"></label>
                                                 </div>
-                                                <label>Seasonality</label>
+                                                <label>Sazonalidade</label>
                                             </div>
                                         </div>
-                                        <button type="submit" id="btnFetch" class="btn btn-primary mb-2"
-                                            disabled>Upload</button>
+                                        <button type="submit" id="btnFetch" class="btn btn-primary search-file-btn mb-4"
+                                            disabled>Enviar</button>
                                     </div>
                                 </form>
                                 {% if uploaded_file_url %}
@@ -126,8 +126,10 @@
                             <div class="card-block">
                                 <div class="thumbnail mb-12">
                                     <div class="thumb">
-                                        <a href="" data-lightbox="1" data-title="My caption 1">
-                                            <img src="/static/files/autoarima_01.png" alt=""
+                                        <a download="grafico_total_periodo.png"
+                                            href="/static/files/grafico_total_periodo.png" data-lightbox="1"
+                                            data-title="My caption 1">
+                                            <img src="/static/files/grafico_total_periodo.png" alt=""
                                                 class="img-fluid img-thumbnail">
                                         </a>
                                     </div>
@@ -143,8 +145,9 @@
                             <div class="card-block">
                                 <div class="thumbnail mb-12">
                                     <div class="thumb">
-                                        <a href="" data-lightbox="2" data-title="My caption 2">
-                                            <img src="/static/files/autoarima.png" alt=""
+                                        <a download="predicao.png" href="/static/files/predicao.png" data-lightbox="2"
+                                            data-title="My caption 2">
+                                            <img src="/static/files/predicao.png" alt=""
                                                 class="img-fluid img-thumbnail">
                                         </a>
                                     </div>
@@ -179,8 +182,7 @@
                 </div>
                 <!-- [ Main Content ] end -->
             </div>
-            <!-- <div id="data_json" visibility: hidden> -->
-            <div id="data_json">
+            <div id="data_json" visibility: hidden>
                 {% if data_json %}
                 {{data_json}}
                 {% else %}
@@ -239,7 +241,7 @@
 
         var json_list = JSON.parse(JSON.stringify(data_json))
 
-        console.log(typeof json_list);
+        //console.log(typeof json_list);
 
 
         //var data = JSON.parse(json_list)
@@ -255,7 +257,7 @@
 
         //console.log(typeof data);
         //console.log(data);
-        console.log('XXXXX');
+        //console.log('XXXXX');
         //Object.entries(data).forEach(([key, value]) => arr.push({ key: value }));
 
         //console.log(JSON.parse(JSON.stringify(arr)));

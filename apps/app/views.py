@@ -10,8 +10,6 @@ from django.urls import reverse
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import render
 from django.shortcuts import redirect, render
-# from predictions.forms import DocumentForm
-# from predictions.models import SAGRAData
 from pmdarima import auto_arima
 from datetime import datetime
 from pandas import concat
@@ -39,8 +37,9 @@ from multiprocessing import Pool, cpu_count, Array
 from multiprocessing import cpu_count
 from joblib import Parallel
 from joblib import delayed
+from pathlib import Path
 
-from apps.predictions.models import SAGRAData
+from .models import SAGRAData
 
 df3 = None
 
@@ -56,7 +55,7 @@ def index(request):
     filename = ''
 
     data = {
-        'Choose the information': 'Choose the information',
+        'Informações': 'Informações',
         'Tmed (ºC)': 'average_temperature',
         'Tmax (ºC)': 'maximum_temperature',
         'Tmin (ºC)': 'minimum_temperature',
@@ -92,9 +91,6 @@ def index(request):
 
         uploaded_file_url, period_dates = open_file_automodel(
             myfile.name, item_value, selected_days, switch)
-
-        # data_json = json.dumps(
-        #     str(uploaded_file_url).replace('[', '').replace(']', ''))
 
         context = {
             'data': data,
@@ -153,37 +149,15 @@ def pages(request):
 
 
 def open_file_automodel(filename, item_value, periods, switch):
-    #global df3
-
-    from pathlib import Path
 
     file_path = Path(filename)
     file_extension = file_path.suffix.lower()[1:]
 
-    # print('DADOS SAGRA::', SAGRAData.objects.filter(pk=1).values())
-
     if SAGRAData.objects.exists():
-
-        print('NÂO TEM nome do ficheiro XXXXXXXXXXXXXXXXXXXXXXXXXXX')
-
-        df3 = pd.DataFrame.from_records(SAGRAData.objects.all().values(
-            'EMA', 'date_occurrence', 'average_temperature', 'maximum_temperature',
-            'minimum_temperature', 'average_humidity', 'maximum_humidity',
-            'minimum_humidity', 'RSG', 'DV', 'average_wind_speed',
-            'maximum_wind_speed', 'rainfall', 'average_grass_temperature',
-            'maximum_grass_temperature', 'minimum_grass_temperature', 'ET0'))
-
-        df3 = df3.loc[:, ~df3.columns.str.contains('^id')]
-
-        print('XXXXXXXXXXXXXXXXXXXXXXXXXX ', df3.columns)
+        df3 = pd.DataFrame.from_records(SAGRAData.objects.all().values())
 
     else:
         SAGRAData.objects.all().delete()
-
-        os.system(
-            "python manage.py sqlsequencereset predictions_sagradata")
-
-        print('TEM nome do ficheiro XXXXXXXXXXXXXXXXXXXXXXXXXXX')
 
         df3 = pd.read_excel(f'core/static/files/{filename}')
 
@@ -211,36 +185,27 @@ def open_file_automodel(filename, item_value, periods, switch):
             'ET0 (mm)': 'ET0',
         }, inplace=True, errors='raise')
 
-        row_iter = df3.iterrows()
+        host = settings.DATABASES['default']['HOST']
+        user = settings.DATABASES['default']['USER']
+        password = settings.DATABASES['default']['PASSWORD']
+        database_name = settings.DATABASES['default']['NAME']
 
-        objs = [
+        database_url = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
+            host=host,
+            user=user,
+            password=password,
+            database_name=database_name,
+        )
 
-            SAGRAData(
-                EMA=row['EMA'],
-                date_occurrence=row['date_occurrence'],
-                average_temperature=row['average_temperature'],
-                maximum_temperature=row['maximum_temperature'],
-                minimum_temperature=row['minimum_temperature'],
-                average_humidity=row['average_humidity'],
-                maximum_humidity=row['maximum_humidity'],
-                minimum_humidity=row['minimum_humidity'],
-                RSG=row['RSG'],
-                DV=row['DV'],
-                average_wind_speed=row['average_wind_speed'],
-                maximum_wind_speed=row['maximum_wind_speed'],
-                rainfall=row['rainfall'],
-                average_grass_temperature=row['average_grass_temperature'],
-                maximum_grass_temperature=row['maximum_grass_temperature'],
-                minimum_grass_temperature=row['minimum_grass_temperature'],
-                ET0=row['ET0']
-            )
-            for index, row in row_iter
+        engine = create_engine(database_url, echo=False)
 
-        ]
+        df3.to_sql(SAGRAData._meta.db_table,
+                   if_exists='replace', con=engine, index_label='id', index=True)
 
-        SAGRAData.objects.bulk_create(objs)
+        # engine = create_engine('sqlite:///db.sqlite3')
 
-    print('XXXXXXXXXXXXXXXXXXXXXXXXXX ', df3.columns)
+        # df3.to_sql(SAGRAData._meta.db_table,
+        #            if_exists='replace', con=engine, index_label='id', index=True)
 
     field = item_value
     n_periods = int(periods)
@@ -258,7 +223,7 @@ def open_file_automodel(filename, item_value, periods, switch):
 
     # df3.Data = pd.to_datetime(df3['date_occurrence'])
     df3.set_index('date_occurrence', inplace=True)
-    df3 = df3.loc[:, ~df3.columns.str.contains('^id')]
+    # df3 = df3.loc[:, ~df3.columns.str.contains('^id')]
     df3.sort_index(inplace=True)
     df3.head()
     plt.figure(figsize=(15, 6))
@@ -271,7 +236,7 @@ def open_file_automodel(filename, item_value, periods, switch):
     plt.tight_layout()
     plt.plot(df3.index, df3[field], label='linear')
     plt.savefig(
-        "core/static/files/autoarima_01.png",
+        "core/static/files/grafico_total_periodo.png",
         dpi=300, bbox_inches='tight'
     )
     # plt.show()
@@ -380,7 +345,7 @@ def plotarima(n_periods, automodel, serie, field):
     plt.legend(("past", "forecast", "95% confidence interval"),
                loc="upper left")
     plt.tight_layout()
-    plt.savefig("core/static/files/autoarima.png",
+    plt.savefig("core/static/files/predicao.png",
                 dpi=300, bbox_inches='tight')
     # plt.show()
 
@@ -426,22 +391,16 @@ def timed(func):
 
 @timed
 def model_auto_ARIMA(df):
-    # D = 0
-    # if switch:
-    #     D = 1
-    model = auto_arima(df, start_p=1, start_q=1,
-                       test='adf',       # use adftest to find optimal 'd'
-                       #    max_p=3, max_q=3,  # maximum p and q
-                       #   m=12,              # frequency of series
-                       #   d=None,           # let model determine 'd'
-                       seasonal=False,   # No Seasonality
-                       start_P=0,
-                       #    D=D,
-                       trace=True,
-                       error_action='ignore',
-                       suppress_warnings=True,
-                       stepwise=True,
-                       )
+    model = auto_arima(
+        df, start_p=1, start_q=1,
+        test='adf',       # use adftest to find optimal 'd'
+        seasonal=False,   # No Seasonality
+        start_P=0,
+        trace=True,
+        error_action='ignore',
+        suppress_warnings=True,
+        stepwise=True,
+    )
 
     print(model.summary)
 
@@ -454,12 +413,12 @@ def _fit_func(y):
         test='adf',
         seasonal=True,
         m=12,
-        # D=1,
+        D=1,
         trace=True,
         error_action='ignore',
         suppress_warnings=True,
         stepwise=True,
-        sarimax_kwargs={'simple_differencing': True}
+        # sarimax_kwargs={'simple_differencing': True}
     )  # new in 1.3.0
 
 
