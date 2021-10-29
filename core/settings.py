@@ -77,20 +77,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 # Conectar localmente no sqlite
-default_dburl = 'sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')
+# default_dburl = 'sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')
 
-# default_dburl = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
-#     host=config('HOST'),
-#     user=config('USER'),
-#     password=config('PASSWORD'),
-#     database_name=config('DATABASE_NAME'),
-# )
-# default_dburl = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
-#     host='172.20.0.2',
-#     user='adbrum',
-#     password='adbrum',
-#     database_name='SAGRAData',
-# )
+default_dburl = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
+    host=config('HOST'),
+    user=config('USER'),
+    password=config('PASSWORD'),
+    database_name=config('DATABASE_NAME'),
+)
+
 DATABASES = {
     'default': config('DATABASE_URL', default=default_dburl, cast=dburl)
 }
