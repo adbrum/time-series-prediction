@@ -33,4 +33,4 @@ class SAGRAData(models.Model):
     # created_on = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return str(self.pk) + ' - ' + self.EMA + ' - ' + str(self.id)
+        return str(self.pk) + ' - ' + self.EMA + ' - ' + str(self.date_occurrence)

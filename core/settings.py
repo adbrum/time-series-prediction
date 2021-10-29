@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'apps.app',  # Enable the inner app
-    # 'apps.predictions'
 ]
 
 MIDDLEWARE = [
