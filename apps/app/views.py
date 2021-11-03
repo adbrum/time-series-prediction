@@ -239,16 +239,8 @@ def open_file_automodel(filename, item_value, periods, switch):
         "core/static/files/grafico_total_periodo.png",
         dpi=300, bbox_inches='tight'
     )
-    # plt.show()
 
-    if switch:
-        automodel = fit_parallel_nv(1, df3[field])
-        for i in automodel:
-            automodel = i
-    else:
-        automodel = model_auto_ARIMA(df3[field])
-
-    # print("KKKKKKKK: ", pd.DataFrame(automodel))
+    automodel = model_auto_ARIMA(df3[field], switch, 0)
 
     data = plotarima(n_periods, automodel, df3, field)
 
@@ -390,39 +382,30 @@ def timed(func):
 
 
 @timed
-def model_auto_ARIMA(df):
+def model_auto_ARIMA(df, switch, D):
+    if switch:
+        D = 1
+    
     model = auto_arima(
         df, start_p=1, start_q=1,
         test='adf',       # use adftest to find optimal 'd'
-        seasonal=False,   # No Seasonality
+        seasonal=switch,   # No Seasonality
         start_P=0,
+        m=12,
+        D=D,
         trace=True,
         error_action='ignore',
         suppress_warnings=True,
         stepwise=True,
+        simple_differencing=True,
     )
 
     print(model.summary)
 
     return model
 
-
-def _fit_func(y):
-    return auto_arima(
-        y,
-        test='adf',
-        seasonal=True,
-        m=12,
-        D=1,
-        trace=True,
-        error_action='ignore',
-        suppress_warnings=True,
-        stepwise=True,
-        # sarimax_kwargs={'simple_differencing': True}
-    )  # new in 1.3.0
-
-
 @timed
+# @cuda.jit
 def fit_parallel_nv(n, data):
     pool = Pool(cpu_count())
     res = pool.map_async(_fit_func, (data for i in range(n)))
