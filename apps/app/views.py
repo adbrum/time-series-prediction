@@ -403,10 +403,3 @@ def model_auto_ARIMA(df, switch, D):
     print(model.summary)
 
     return model
-
-@timed
-# @cuda.jit
-def fit_parallel_nv(n, data):
-    pool = Pool(cpu_count())
-    res = pool.map_async(_fit_func, (data for i in range(n)))
-    return res.get()
