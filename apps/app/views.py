@@ -245,9 +245,9 @@ def open_file_automodel(filename, item_value, periods, switch):
     data = plotarima(n_periods, automodel, df3, field)
 
     # remove all excell files
-    files = glob.glob('core/static/files/*.xls*')
-    for f in files:
-        os.remove(f)
+    # files = glob.glob('core/static/files/*.xls*')
+    # for f in files:
+    #     os.remove(f)
 
     return data, period_dates
 
@@ -288,7 +288,8 @@ def plotarima(n_periods, automodel, serie, field):
 
     for key, value in data.items():
         # print(str(datetime.fromtimestamp(int(key[:-3]))), '->', str(value))
-        data_dict[str(datetime.fromtimestamp(int(key[:-3])))[:10]] = str(value)
+        data_dict[str(datetime.fromtimestamp(int(key[:-3])))
+                  [:10]] = str(round(value, 2))
 
     data = json.dumps(data_dict, indent=4)
 
@@ -348,6 +349,14 @@ def plotarima(n_periods, automodel, serie, field):
 
     jsonMerged = {**json.loads(data_serie), **json.loads(data)}
 
+    df = pd.DataFrame(data=jsonMerged, index=[0])
+
+    df = (df.T)
+
+    print('""""""""""""""""""""""""": ', df)
+
+    df.to_excel('core/static/files/predicao.xlsx')
+
     for key, value in jsonMerged.items():
         json_list.append({"y": key, "a": value})
 
@@ -385,7 +394,7 @@ def timed(func):
 def model_auto_ARIMA(df, switch, D):
     if switch:
         D = 1
-    
+
     model = auto_arima(
         df, start_p=1, start_q=1,
         test='adf',       # use adftest to find optimal 'd'
