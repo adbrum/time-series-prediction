@@ -90,9 +90,10 @@
                                                 <label>Sazonalidade</label>
                                             </div>
                                         </div>
-                                        <button type="submit" id="btnFetch" class="btn btn-primary search-file-btn mb-4"
-                                            disabled>Enviar</button>
-                                    </div>
+                                        <div class="col-xl-2">
+                                            <button type="submit" id="btnFetch"
+                                                class="btn btn-primary search-file-btn mb-4" disabled>Enviar</button>
+                                        </div>
                                 </form>
                                 {% if uploaded_file_url %}
                                 <p>Choose file: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url
@@ -107,9 +108,17 @@
                 <div class="row">
                     {% if series %}
                     <div class="col-xl-12">
+                        <div class="card-block">
+                            <div class="col-xl-2">
+                                <a class="btn btn-primary search-file-btn mb-4" download="predicao.zip"
+                                    href="/static/files/predicao.zip" data-lightbox="1" data-title="My caption 3">
+                                    Exportar
+                                </a>
+                            </div>
+                        </div>
                         <div class="card">
                             <div class="card-header">
-                                <h5>Total period graph
+                                <h5>Gráfico do período
                                     <!-- <div> </div>
                                     <div class="row">
                                         {% for key, value in period_dates.items %}
@@ -140,7 +149,7 @@
                     <div class="col-xl-12">
                         <div class="card">
                             <div class="card-header">
-                                <h5>Total period graph and prediction</h5>
+                                <h5>Gráfico e previsão do período</h5>
                             </div>
                             <div class="card-block">
                                 <div class="thumbnail mb-12">

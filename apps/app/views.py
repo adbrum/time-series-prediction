@@ -40,6 +40,7 @@ from joblib import delayed
 from pathlib import Path
 
 from .models import SAGRAData
+from zipfile import ZipFile
 
 df3 = None
 
@@ -86,7 +87,7 @@ def index(request):
         selected_days = request.POST.get('selectedDays')
 
         fs = FileSystemStorage()
-        filename = fs.save('core/static/files/' + myfile.name, myfile)
+        filename = fs.save('core/static/files/upload/' + myfile.name, myfile)
         uploaded_file_url = fs.url(filename)
 
         uploaded_file_url, period_dates = open_file_automodel(
@@ -159,11 +160,11 @@ def open_file_automodel(filename, item_value, periods, switch):
     else:
         SAGRAData.objects.all().delete()
 
-        df3 = pd.read_excel(f'core/static/files/{filename}')
+        df3 = pd.read_excel(f'core/static/files/upload/{filename}')
 
         if file_extension == 'xlsx':
             df3 = pd.read_excel(
-                f'core/static/files/{filename}', engine='openpyxl')
+                f'core/static/files/upload/{filename}', engine='openpyxl')
 
         df3.rename(columns={
             'EMA': 'EMA',
@@ -230,7 +231,7 @@ def open_file_automodel(filename, item_value, periods, switch):
     plt.grid()
     plt.tight_layout()
     plt.title(
-        f'Period between dates: {start_test} - {end_test}')
+        f'Período entre datas: {start_test} - {end_test}')
     plt.xlabel("Date")
     plt.ylabel(field)
     plt.tight_layout()
@@ -240,14 +241,16 @@ def open_file_automodel(filename, item_value, periods, switch):
         dpi=300, bbox_inches='tight'
     )
 
-    automodel = model_auto_ARIMA(df3[field], switch, 0)
+    automodel = model_auto_ARIMA(df3[field], switch)
 
     data = plotarima(n_periods, automodel, df3, field)
 
     # remove all excell files
-    # files = glob.glob('core/static/files/*.xls*')
-    # for f in files:
-    #     os.remove(f)
+    files = glob.glob('core/static/files/upload/*.xls*')
+    for f in files:
+        os.remove(f)
+
+    zip_files()
 
     return data, period_dates
 
@@ -330,7 +333,7 @@ def plotarima(n_periods, automodel, serie, field):
     plt.plot(serie[field])
     plt.plot(fc_series, color="orange")
     plt.title(
-        f'Prediction days {n_periods}: {list(period.items())[0][0]} - {list(period.items())[-1][0]}')
+        f'Período de predição {n_periods} dias: {list(period.items())[0][0]} - {list(period.items())[-1][0]}')
     plt.xlabel("Date")
     plt.ylabel(serie[field].name)
     plt.fill_between(lower_series.index, lower_series, upper_series, color="k",
@@ -349,13 +352,7 @@ def plotarima(n_periods, automodel, serie, field):
 
     jsonMerged = {**json.loads(data_serie), **json.loads(data)}
 
-    df = pd.DataFrame(data=jsonMerged, index=[0])
-
-    df = (df.T)
-
-    print('""""""""""""""""""""""""": ', df)
-
-    df.to_excel('core/static/files/predicao.xlsx')
+    create_xlsx(jsonMerged)
 
     for key, value in jsonMerged.items():
         json_list.append({"y": key, "a": value})
@@ -391,9 +388,11 @@ def timed(func):
 
 
 @timed
-def model_auto_ARIMA(df, switch, D):
+def model_auto_ARIMA(df, switch):
     if switch:
         D = 1
+    else:
+        D = 0
 
     model = auto_arima(
         df, start_p=1, start_q=1,
@@ -412,3 +411,20 @@ def model_auto_ARIMA(df, switch, D):
     print(model.summary)
 
     return model
+
+
+def create_xlsx(data):
+    df = pd.DataFrame(data=data, index=[0])
+    df = (df.T)
+    df.to_excel('core/static/files/predicao.xlsx')
+
+
+def zip_files():
+    # create a ZipFile object
+    zipObj = ZipFile('core/static/files/predicao.zip', 'w')
+    # Add multiple files to the zip
+    zipObj.write('core/static/files/grafico_total_periodo.png')
+    zipObj.write('core/static/files/predicao.png')
+    zipObj.write('core/static/files/predicao.xlsx')
+    # close the Zip File
+    zipObj.close()
