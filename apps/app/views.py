@@ -233,7 +233,7 @@ def open_file_automodel(filename, item_value, periods, switch):
     plt.title(
         f'Período entre datas: {start_test} - {end_test}')
     plt.xlabel("Date")
-    plt.ylabel(field)
+    plt.ylabel(field.replace('_', ' ').capitalize())
     plt.tight_layout()
     plt.plot(df3.index, df3[field], label='linear')
     plt.savefig(
@@ -335,7 +335,7 @@ def plotarima(n_periods, automodel, serie, field):
     plt.title(
         f'Período de predição {n_periods} dias: {list(period.items())[0][0]} - {list(period.items())[-1][0]}')
     plt.xlabel("Date")
-    plt.ylabel(serie[field].name)
+    plt.ylabel(serie[field].name.replace('_', ' ').capitalize())
     plt.fill_between(lower_series.index, lower_series, upper_series, color="k",
                      alpha=0.15)
     plt.legend(("past", "forecast", "95% confidence interval"),
