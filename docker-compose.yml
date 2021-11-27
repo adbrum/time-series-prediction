@@ -8,7 +8,6 @@ services:
     volumes:
       - ./data/db:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=adbrum
       - POSTGRES_USER=adbrum
       - POSTGRES_PASSWORD=adbrum
       - POSTGRES_DB=SAGRAData
