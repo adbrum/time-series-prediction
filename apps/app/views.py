@@ -186,10 +186,10 @@ def open_file_automodel(filename, item_value, periods, switch):
             'ET0 (mm)': 'ET0',
         }, inplace=True, errors='raise')
 
-        host = settings.DATABASES['default']['HOST']
-        user = settings.DATABASES['default']['USER']
-        password = settings.DATABASES['default']['PASSWORD']
-        database_name = settings.DATABASES['default']['NAME']
+        # host = settings.DATABASES['default']['HOST']
+        # user = settings.DATABASES['default']['USER']
+        # password = settings.DATABASES['default']['PASSWORD']
+        # database_name = settings.DATABASES['default']['NAME']
 
         # database_url = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
         #     host=host,
@@ -200,15 +200,13 @@ def open_file_automodel(filename, item_value, periods, switch):
 
         # engine = create_engine(database_url, echo=False)
 
+        # df3.to_sql(SAGRAData._meta.db_table,
+        #            if_exists='replace', con=engine, index_label='id', index=True)
+
         engine = create_engine('sqlite:///db.sqlite3')
 
         df3.to_sql(SAGRAData._meta.db_table,
                    if_exists='replace', con=engine, index_label='id', index=True)
-
-        # engine = create_engine('sqlite:///db.sqlite3')
-
-        # df3.to_sql(SAGRAData._meta.db_table,
-        #            if_exists='replace', con=engine, index_label='id', index=True)
 
     field = item_value
     n_periods = int(periods)
