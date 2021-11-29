@@ -19,8 +19,7 @@ SECRET_KEY = config('SECRET_KEY', default='S#perS3crEt_1122')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 # load production server from .env
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', "sagracharts.herokuapp.com", "*",
-                 config('SERVER', default='127.0.0.1')]
+ALLOWED_HOSTS = ['*']
 
 # DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
@@ -76,7 +75,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 # Conectar localmente no sqlite
-default_dburl = 'sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')
 
 # default_dburl = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
 #     host=config('HOST'),
@@ -85,8 +83,10 @@ default_dburl = 'sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')
 #     database_name=config('DATABASE_NAME'),
 # )
 
+defaut_dburl = 'sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')
+
 DATABASES = {
-    'default': config('DATABASE_URL', default=default_dburl, cast=dburl)
+    'default': config('DATABASE_URL', default=defaut_dburl, cast=dburl),
 }
 
 # Password validation
