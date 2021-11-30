@@ -155,10 +155,11 @@ def open_file_automodel(filename, item_value, periods, switch):
     file_extension = file_path.suffix.lower()[1:]
 
     if SAGRAData.objects.exists():
+
         df3 = pd.DataFrame.from_records(SAGRAData.objects.all().values())
 
     else:
-        # SAGRAData.objects.all().delete()
+        SAGRAData.objects.all().delete()
 
         df3 = pd.read_excel(f'core/static/files/upload/{filename}')
 
