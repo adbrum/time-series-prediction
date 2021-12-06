@@ -339,7 +339,7 @@ def plotarima(n_periods, automodel, serie, field):
     plt.ylabel(serie[field].name.replace('_', ' ').capitalize())
     plt.fill_between(lower_series.index, lower_series, upper_series, color="k",
                      alpha=0.15)
-    plt.legend(("past", "forecast", "95% confidence interval"),
+    plt.legend(("dados anteriores", "predição", "95% intervalo de confiança"),
                loc="upper left")
     plt.tight_layout()
     plt.savefig("core/static/files/predicao.png",
