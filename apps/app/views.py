@@ -162,7 +162,6 @@ def open_file_automodel(filename, item_value, periods, switch):
         SAGRAData.objects.all().delete()
 
         df = pd.read_excel(f'core/static/files/upload/{filename}')
-        
 
         if file_extension == 'xlsx':
             df = pd.read_excel(
@@ -208,7 +207,7 @@ def open_file_automodel(filename, item_value, periods, switch):
         engine = create_engine('sqlite:///db.sqlite3')
 
         df.to_sql(SAGRAData._meta.db_table,
-                   if_exists='replace', con=engine, index_label='id', index=True)
+                  if_exists='replace', con=engine, index_label='id', index=True)
 
     field = item_value
     n_periods = int(periods)
@@ -354,12 +353,12 @@ def plotarima(n_periods, automodel, serie, field):
     # print(
     #     f'#####$$$$$$$$$$$$$$$$$$$$$$$$$$$$ DATA: {list(period.items())[0][0]}-- {list(period.items())[-1][0]}')
 
-    jsonMerged = {**json.loads(data_serie), **json.loads(data)}
+    # jsonMerged = {**json.loads(data_serie), **json.loads(data)}
 
-    create_xlsx(jsonMerged)
+    # create_xlsx(jsonMerged)
 
-    for key, value in jsonMerged.items():
-        json_list.append({"y": key, "a": value})
+    # for key, value in jsonMerged.items():
+    #     json_list.append({"y": key, "a": value})
 
     # data = json.dumps(jsonMerged)
     # print(data)
@@ -406,20 +405,14 @@ def model_auto_ARIMA(df, switch):
         error_action='ignore',
         suppress_warnings=True,
         stepwise=True,
-        # start_p=1, start_q=1,
-        # test='adf',       # use adftest to find optimal 'd'
-        # seasonal=switch,   # No Seasonality
-        # start_P=0,
-        # m=12,
-        # D=D,
-        # trace=True,
-        # error_action='ignore',
-        # suppress_warnings=True,
-        # stepwise=True,
         simple_differencing=True,
     )
 
-    print(model.summary)
+    print(model.summary())
+    print(f"Best ARIMA {model.order} model")
+    print(f"AIC: {model.aic()}")
+    print(f"BIC: {model.bic()}")
+    print(f"AICc: {model.aicc()}")
 
     return model
 
