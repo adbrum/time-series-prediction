@@ -42,7 +42,7 @@ from pathlib import Path
 from .models import SAGRAData
 from zipfile import ZipFile
 
-df3 = None
+df = None
 
 
 @login_required(login_url="/login/")
@@ -156,18 +156,19 @@ def open_file_automodel(filename, item_value, periods, switch):
 
     if SAGRAData.objects.exists():
 
-        df3 = pd.DataFrame.from_records(SAGRAData.objects.all().values())
+        df = pd.DataFrame.from_records(SAGRAData.objects.all().values())
 
     else:
         SAGRAData.objects.all().delete()
 
-        df3 = pd.read_excel(f'core/static/files/upload/{filename}')
+        df = pd.read_excel(f'core/static/files/upload/{filename}')
+        
 
         if file_extension == 'xlsx':
-            df3 = pd.read_excel(
+            df = pd.read_excel(
                 f'core/static/files/upload/{filename}', engine='openpyxl')
 
-        df3.rename(columns={
+        df.rename(columns={
             'EMA': 'EMA',
             'Data': 'date_occurrence',
             'Tmed (ºC)': 'average_temperature',
@@ -201,19 +202,19 @@ def open_file_automodel(filename, item_value, periods, switch):
 
         # engine = create_engine(database_url, echo=False)
 
-        # df3.to_sql(SAGRAData._meta.db_table,
+        # df.to_sql(SAGRAData._meta.db_table,
         #            if_exists='replace', con=engine, index_label='id', index=True)
 
         engine = create_engine('sqlite:///db.sqlite3')
 
-        df3.to_sql(SAGRAData._meta.db_table,
+        df.to_sql(SAGRAData._meta.db_table,
                    if_exists='replace', con=engine, index_label='id', index=True)
 
     field = item_value
     n_periods = int(periods)
 
-    start_test = (df3['date_occurrence'][0]).strftime("%d-%m-%Y")
-    end_test = (df3['date_occurrence'][len(df3)-1]).strftime("%d-%m-%Y")
+    start_test = (df['date_occurrence'][0]).strftime("%d-%m-%Y")
+    end_test = (df['date_occurrence'][len(df)-1]).strftime("%d-%m-%Y")
 
     print(f"Data inicio {start_test}")
     print(f"Data fim {end_test}")
@@ -223,11 +224,13 @@ def open_file_automodel(filename, item_value, periods, switch):
         "end_date": {end_test},
     }
 
-    # df3.Data = pd.to_datetime(df3['date_occurrence'])
-    df3.set_index('date_occurrence', inplace=True)
-    # df3 = df3.loc[:, ~df3.columns.str.contains('^id')]
-    df3.sort_index(inplace=True)
-    df3.head()
+    df = df.sort_values('date_occurrence', ascending=False)
+    df = df.drop_duplicates(subset='date_occurrence', keep='first')
+    # df.Data = pd.to_datetime(df['date_occurrence'])
+    df.set_index('date_occurrence', inplace=True)
+    # df = df.loc[:, ~df.columns.str.contains('^id')]
+    df.sort_index(inplace=True)
+    df.head()
     plt.figure(figsize=(15, 6))
     plt.grid()
     plt.tight_layout()
@@ -236,15 +239,15 @@ def open_file_automodel(filename, item_value, periods, switch):
     plt.xlabel("Date")
     plt.ylabel(field.replace('_', ' ').capitalize())
     plt.tight_layout()
-    plt.plot(df3.index, df3[field], label='linear')
+    plt.plot(df.index, df[field], label='linear')
     plt.savefig(
         "core/static/files/grafico_total_periodo.png",
         dpi=300, bbox_inches='tight'
     )
 
-    automodel = model_auto_ARIMA(df3[field], switch)
+    automodel = model_auto_ARIMA(df[field], switch)
 
-    data = plotarima(n_periods, automodel, df3, field)
+    data = plotarima(n_periods, automodel, df, field)
 
     # remove all excell files
     files = glob.glob('core/static/files/upload/*.xls*')
@@ -397,15 +400,22 @@ def model_auto_ARIMA(df, switch):
 
     model = auto_arima(
         df, start_p=1, start_q=1,
-        test='adf',       # use adftest to find optimal 'd'
-        seasonal=switch,   # No Seasonality
-        start_P=0,
-        m=12,
-        D=D,
-        trace=True,
+        max_p=3, max_q=3, m=12,
+        start_P=0, seasonal=switch,
+        test='adf', D=D, trace=True,
         error_action='ignore',
         suppress_warnings=True,
         stepwise=True,
+        # start_p=1, start_q=1,
+        # test='adf',       # use adftest to find optimal 'd'
+        # seasonal=switch,   # No Seasonality
+        # start_P=0,
+        # m=12,
+        # D=D,
+        # trace=True,
+        # error_action='ignore',
+        # suppress_warnings=True,
+        # stepwise=True,
         simple_differencing=True,
     )
 
