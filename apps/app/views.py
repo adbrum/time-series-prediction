@@ -44,6 +44,24 @@ from zipfile import ZipFile
 
 df = None
 
+names = {
+    'average_temperature': 'Temperatura Média',
+    'maximum_temperature': 'Temperatura Máxima',
+    'minimum_temperature': 'Temperatura Mínima',
+    'average_humidity': 'Humidade Média',
+    'maximum_humidity': 'Humidade Máxima',
+    'minimum_humidity': 'Humidade Mínima',
+    'RSG': 'Radiação Solar Global',
+    'DV': 'Difusão de Vento',
+    'average_wind_speed': 'Velocidade Média do Vento',
+    'maximum_wind_speed': 'Velocidade Máxima do Vento',
+    'rainfall': 'Pluviosidade',
+    'average_grass_temperature': 'Temperatura Média da Relva',
+    'maximum_grass_temperature': 'Temperatura Máxima da Relva',
+    'minimum_grass_temperature': 'Temperatura Mínima da Relva',
+    'ET0': 'Evapotranspiração',
+}
+
 
 @login_required(login_url="/login/")
 def index(request):
@@ -235,8 +253,8 @@ def open_file_automodel(filename, item_value, periods, switch):
     plt.tight_layout()
     plt.title(
         f'Período entre datas: {start_test} - {end_test}')
-    plt.xlabel("Date")
-    plt.ylabel(field.replace('_', ' ').capitalize())
+    plt.xlabel("Data")
+    plt.ylabel(names[field])
     plt.tight_layout()
     plt.plot(df.index, df[field], label='linear')
     plt.savefig(
@@ -264,29 +282,12 @@ def plotarima(n_periods, automodel, serie, field):
     fc, confint = automodel.predict(
         n_periods=n_periods, return_conf_int=True)
 
-    # print(
-    #     f'############################### FC: {fc} confint: {confint} \
-    #     --#######- {serie.index[serie.shape[0]-1]}')
-
-    # Weekly index
-    # fc_ind = pd.date_range(timeseries.index[0],{{
-    # periods=n_periods, freq="D")}}
     fc_ind = pd.date_range(serie.index[serie.shape[0]-1],
                            periods=n_periods, freq="D")
-
-    # Calendar index
-    # fc_ind = pd.date_range(
-    #     start=serie.index[serie.shape[0]-1], end='2020-10-31 00:00:00+00:00')
-    # print(fc_ind)
-
-    # print(dict(zip(fc_ind[0], fc)))
 
     # Forecast series
     fc_series = pd.Series(fc, index=fc_ind)
     json_serie = fc_series.to_json(orient='index')
-
-    # print(
-    # f'#####$$$$$$$$$$$$$$$$$$$$$$$$$$$$ fc_series: {json_serie}')
 
     data = json.loads(json_serie)
 
@@ -299,16 +300,11 @@ def plotarima(n_periods, automodel, serie, field):
 
     data = json.dumps(data_dict, indent=4)
 
-    # print('TESTE: ', data)
     # Upper and lower confidence bounds
     lower_series = pd.Series(confint[:, 0], index=fc_ind)
     upper_series = pd.Series(confint[:, 1], index=fc_ind)
 
-    # lower_series = lower_series.to_json(orient='index')
-
     series = serie[field]
-
-    # print('#### SERIES ####', series)
 
     data_series = series.to_json(orient='index')
 
@@ -324,9 +320,6 @@ def plotarima(n_periods, automodel, serie, field):
 
     data_serie = json.dumps(data_serie)
 
-    # print(
-    #     f'#####$$$$$$$$$$$$$$$$$$$$$$$$$$$$ lower_series.index: {data_serie}')
-
     period = json.loads(data)
 
     # Create plot
@@ -337,8 +330,8 @@ def plotarima(n_periods, automodel, serie, field):
     plt.plot(fc_series, color="orange")
     plt.title(
         f'Período de predição {n_periods} dias: {list(period.items())[0][0]} - {list(period.items())[-1][0]}')
-    plt.xlabel("Date")
-    plt.ylabel(serie[field].name.replace('_', ' ').capitalize())
+    plt.xlabel("Data")
+    plt.ylabel(names[field])
     plt.fill_between(lower_series.index, lower_series, upper_series, color="k",
                      alpha=0.15)
     plt.legend(("dados anteriores", "predição", "95% intervalo de confiança"),
@@ -346,37 +339,8 @@ def plotarima(n_periods, automodel, serie, field):
     plt.tight_layout()
     plt.savefig("core/static/files/predicao.png",
                 dpi=300, bbox_inches='tight')
-    # plt.show()
 
     json_list = []
-
-    # print(
-    #     f'#####$$$$$$$$$$$$$$$$$$$$$$$$$$$$ DATA: {list(period.items())[0][0]}-- {list(period.items())[-1][0]}')
-
-    # jsonMerged = {**json.loads(data_serie), **json.loads(data)}
-
-    # create_xlsx(jsonMerged)
-
-    # for key, value in jsonMerged.items():
-    #     json_list.append({"y": key, "a": value})
-
-    # data = json.dumps(jsonMerged)
-    # print(data)
-
-    # data = {"data_json": data}
-
-    # print('JASON FORMAT: ', json_list)
-    # print('JASON FORMAT: ', str(json_list).replace('[', '').replace(']', ''))
-
-    # context = {}
-
-    # context["data"] = ','.join([str(i) for i in json_list])
-
-    # print(json.dumps(context))
-
-    # html_template = loader.get_template('index.html')
-
-    # return HttpResponse(html_template.render(context))
 
     return json_list
 
