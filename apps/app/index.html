@@ -1,0 +1,1453 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Charts Morris {% endblock %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}
+
+<link rel="stylesheet" href="/static/assets/plugins/chart-morris/css/morris.css">
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+<div class="pcoded-content">
+  <div class="pcoded-inner-content">
+    <!-- [ breadcrumb ] start -->
+    <div class="page-header">
+      <div class="page-block">
+        <div class="row align-items-center">
+
+          <div class="col-md-12">
+            <div class="page-header-title">
+              <h5 class="m-b-10">SAGRA Gráficos</h5>
+            </div>
+            <!-- <ul class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/"><i class="feather icon-home"></i></a></li>
+                            <li class="breadcrumb-item"><a href="javascript:">Chart</a></li>
+                            <li class="breadcrumb-item"><a href="javascript:">Morris Chart</a></li>
+                        </ul> -->
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- [ breadcrumb ] end -->
+    <div class="main-body">
+      <div class="page-wrapper">
+        <div class="row">
+          <!-- [ Morris Chart ] start -->
+          <div class="col-xl-12">
+            <div class="card">
+              <div class="card-block">
+                <form method="post" action="{% url 'home' %}" enctype="multipart/form-data">
+                  {% csrf_token %}
+                  {% if filename %}
+                  <div class="card-header">
+                    <h5>{{filename}}</h5>
+                  </div>
+                  {% endif %}
+                  <div class="row">
+                    <div class="col-xl-4">
+                      <!-- <input class="form-control" type="file" name="myfile"> -->
+                      <label id="btnChoose" class="btn btn-primary search-file-btn">
+                        <input type="file" name="myfile" id="myfile" style="display:none">
+                        <span>Escolher ficheiro</span>
+                      </label>
+                      <span>Nenhum ficheiro</span>
+                    </div>
+                    <div class="col-xl-2">
+                      <select id="select" class="js-example-basic-single form-control select2-hidden-accessible"
+                        name="item_value">
+                        <optgroup label="">
+                          {% for key, values in data.items %}
+                          <option value="{{ values }}">{{ key }}</option>
+                          {% endfor %}
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div class="col-xl-2">
+                      <select class="js-example-basic-single form-control select2-hidden-accessible" name="selectedDays"
+                        id="selectedDays" aria-label="Exemplo de select com botão addon" disabled>
+                        <optgroup label="">
+                          <option selected>Dias previsões</option>
+                          <option value="10">10</option>
+                          <option value="20">20</option>
+                          <option value="30">30</option>
+                          <option value="60">60</option>
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div class="col-xl-2">
+                      <div class="form-group">
+                        <div class="switch d-inline m-r-10">
+                          <input type="checkbox" class="switch-input" name="validation-switcher" id="switch-1">
+                          <label for="switch-1" class="cr"></label>
+                        </div>
+                        <label>Sazonalidade</label>
+                      </div>
+                    </div>
+                    <div class="col-xl-2">
+                      <button type="submit" id="btnFetch" class="btn btn-primary search-file-btn mb-4"
+                        disabled>Enviar</button>
+                    </div>
+                </form>
+                {% if uploaded_file_url %}
+                <p>Choose file: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url
+                    }}</a>
+                </p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- [ Main Content ] start -->
+        <div class="row">
+          {% if series %}
+          <div class="col-xl-12">
+            <div class="card-block">
+              <div class="col-xl-2">
+                <a class="btn btn-primary search-file-btn mb-4" download="predicao.zip"
+                  href="/static/files/predicao.zip" data-lightbox="1" data-title="My caption 3">
+                  Exportar
+                </a>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h5>Gráfico do período
+                  <!-- <div> </div>
+                                    <div class="row">
+                                        {% for key, value in period_dates.items %}
+                                        {% if key == 'start_date'%}
+                                        Start date: {{value}}
+                                        {% endif %}
+                                        {% if key == 'end_date'%}
+                                        End date: {{value}}
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div> -->
+                </h5>
+              </div>
+              <div class="card-block">
+                <div class="thumbnail mb-12">
+                  <div class="thumb">
+                    <a download="grafico_total_periodo.png" href="/static/files/grafico_total_periodo.png"
+                      data-lightbox="1" data-title="My caption 1">
+                      <img src="/static/files/grafico_total_periodo.png" alt="" class="img-fluid img-thumbnail">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-12">
+            <div class="card">
+              <div class="card-header">
+                <h5>Gráfico e previsão do período</h5>
+              </div>
+              <div class="card-block">
+                <div class="thumbnail mb-12">
+                  <div class="thumb">
+                    <a download="predicao.png" href="/static/files/predicao.png" data-lightbox="2"
+                      data-title="My caption 2">
+                      <img src="/static/files/predicao.png" alt="" class="img-fluid img-thumbnail">
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+          <!-- [ Morris Chart ] start -->
+          <!-- <div class="col-xl-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Line [ Angle ] Chart</h5>
+                            </div>
+                            <div class="card-block">
+                                <div id="morris-line-chart" class="ChartShadow" style="height:300px"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Line [ Smooth ] Chart</h5>
+                            </div>
+                            <div class="card-block">
+                                <div id="morris-line-smooth-chart" class="ChartShadow" style="height:300px"></div>
+                            </div>
+                        </div>
+                    </div> -->
+
+          <!-- [ Morris Chart ] end -->
+        </div>
+        <!-- [ Main Content ] end -->
+      </div>
+      <div id="data_json" visibility: hidden>
+        {% if data_json %}
+        {{data_json}}
+        {% else %}
+        []
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+<script src="/static/assets/plugins/chart-morris/js/raphael.min.js"></script>
+<script src="/static/assets/plugins/chart-morris/js/morris.min.js"></script>
+<!-- <script src="/static/assets/js/pages/chart-morris-custom.js"></script> -->
+
+<!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"></script> -->
+
+<script type="text/javascript">
+    // var data_json = "{{ data_json }}"
+
+    //var mydataString = JSON.stringify(("{{data_json|escapejs}}").toString());
+
+    //console.log(typeof "{{data_json}}");
+
+
+    //var obj = document.getElementById("filename");
+
+
+    //console.log(JSON.stringify("{{ data_json}}"));
+
+    //obj = obj.replace('&#x27;', '\"')
+    //obj = obj.replace('y&#x27;', '\"')
+    //var mydataString = mydataString.replace(']', '')
+    //console.log(obj)
+    //var string = '[{ "y": "2020", "a": 30, "b": 12 }]';
+    //var obj = JSON.parse(mydataString);
+    //var obj = JSON.parse(obj)
+    //console.log(obj);
+
+
+
+
+</script>
+
+<script>
+  'use strict';
+  $(document).ready(function () {
+
+    var data_json = document.getElementById("data_json").innerText;
+    //console.log(JSON.parse(JSON.stringify(data_json)));
+
+    var json_list = JSON.parse(JSON.stringify(data_json))
+
+    //console.log(typeof json_list);
+
+
+    //var data = JSON.parse(json_list)
+
+    //let json = JSON.parse(data.data)
+
+    console.log(JSON.parse(JSON.stringify(json_list)));
+
+    //var numbersCopy = JSON.stringify({ "data": data });
+
+    //numbersCopy[0].push(300);
+    var arr = []
+
+    //console.log(typeof data);
+    //console.log(data);
+    //console.log('XXXXX');
+    //Object.entries(data).forEach(([key, value]) => arr.push({ key: value }));
+
+    //console.log(JSON.parse(JSON.stringify(arr)));
+    //console.log('XXXXX');
+
+
+
+    $().ready(function ($) {
+      $('.search-file-btn').children("input").bind('change', function () {
+        var fileName = '';
+        fileName = $(this).val().split("\\").slice(-1)[0];
+        $(this).parent().parent().children("span").html(fileName);
+      })
+    });
+
+    $('select#select').on('change', function () {
+      $('select#selectedDays').prop('disabled', false);
+    });
+
+    $('select#selectedDays').on('change', function () {
+      $('button#btnFetch').prop('disabled', false);
+    });
+
+    $("#btnFetch").click(function () {
+      // disable button
+      setTimeout(function () {
+        $("#btnChoose").prop("disabled", true);
+        $("#btnFetch").prop("disabled", true);
+        $("#select").prop("disabled", true);
+        $("#selectedDays").prop("disabled", true);
+      }, 500);
+      // add spinner to button
+      $(this).html(
+        `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Carregando...`
+      );
+    });
+
+    setTimeout(function () {
+      var datas = [
+        {
+          "y": "2020-01-01",
+          "a": "2.6"
+        },
+        {
+          "y": "2020-01-02",
+          "a": "3.33"
+        },
+        {
+          "y": "2020-01-03",
+          "a": "7.87"
+        },
+        {
+          "y": "2020-01-04",
+          "a": "5.81"
+        },
+        {
+          "y": "2020-01-05",
+          "a": "5.17"
+        },
+        {
+          "y": "2020-01-06",
+          "a": "3.45"
+        },
+        {
+          "y": "2020-01-07",
+          "a": "4.12"
+        },
+        {
+          "y": "2020-01-08",
+          "a": "2.99"
+        },
+        {
+          "y": "2020-01-09",
+          "a": "8.56"
+        },
+        {
+          "y": "2020-01-10",
+          "a": "4.14"
+        },
+        {
+          "y": "2020-01-11",
+          "a": "3.61"
+        },
+        {
+          "y": "2020-01-12",
+          "a": "3.53"
+        },
+        {
+          "y": "2020-01-13",
+          "a": "1.5"
+        },
+        {
+          "y": "2020-01-14",
+          "a": "5.22"
+        },
+        {
+          "y": "2020-01-15",
+          "a": "10.98"
+        },
+        {
+          "y": "2020-01-16",
+          "a": "10.93"
+        },
+        {
+          "y": "2020-01-17",
+          "a": "8.74"
+        },
+        {
+          "y": "2020-01-18",
+          "a": "11.07"
+        },
+        {
+          "y": "2020-01-19",
+          "a": "6.19"
+        },
+        {
+          "y": "2020-01-20",
+          "a": "5.14"
+        },
+        {
+          "y": "2020-01-21",
+          "a": "4.15"
+        },
+        {
+          "y": "2020-01-22",
+          "a": "5.58"
+        },
+        {
+          "y": "2020-01-23",
+          "a": "7.97"
+        },
+        {
+          "y": "2020-01-24",
+          "a": "8.45"
+        },
+        {
+          "y": "2020-01-25",
+          "a": "6.02"
+        },
+        {
+          "y": "2020-01-26",
+          "a": "4.36"
+        },
+        {
+          "y": "2020-01-27",
+          "a": "5.77"
+        },
+        {
+          "y": "2020-01-28",
+          "a": "10.4"
+        },
+        {
+          "y": "2020-01-29",
+          "a": "10.16"
+        },
+        {
+          "y": "2020-01-30",
+          "a": "9.47"
+        },
+        {
+          "y": "2020-01-31",
+          "a": "12.42"
+        },
+        {
+          "y": "2020-02-01",
+          "a": "11.25"
+        },
+        {
+          "y": "2020-02-02",
+          "a": "9.68"
+        },
+        {
+          "y": "2020-02-03",
+          "a": "11.23"
+        },
+        {
+          "y": "2020-02-04",
+          "a": "6.18"
+        },
+        {
+          "y": "2020-02-05",
+          "a": "8.83"
+        },
+        {
+          "y": "2020-02-06",
+          "a": "5.34"
+        },
+        {
+          "y": "2020-02-07",
+          "a": "10.04"
+        },
+        {
+          "y": "2020-02-08",
+          "a": "8.84"
+        },
+        {
+          "y": "2020-02-09",
+          "a": "9.29"
+        },
+        {
+          "y": "2020-02-10",
+          "a": "7.26"
+        },
+        {
+          "y": "2020-02-11",
+          "a": "7.84"
+        },
+        {
+          "y": "2020-02-12",
+          "a": "9.56"
+        },
+        {
+          "y": "2020-02-13",
+          "a": "10.0"
+        },
+        {
+          "y": "2020-02-14",
+          "a": "8.0"
+        },
+        {
+          "y": "2020-02-15",
+          "a": "6.3"
+        },
+        {
+          "y": "2020-02-16",
+          "a": "7.83"
+        },
+        {
+          "y": "2020-02-17",
+          "a": "7.59"
+        },
+        {
+          "y": "2020-02-18",
+          "a": "3.72"
+        },
+        {
+          "y": "2020-02-19",
+          "a": "4.86"
+        },
+        {
+          "y": "2020-02-20",
+          "a": "6.88"
+        },
+        {
+          "y": "2020-02-21",
+          "a": "7.79"
+        },
+        {
+          "y": "2020-02-22",
+          "a": "8.55"
+        },
+        {
+          "y": "2020-02-23",
+          "a": "7.86"
+        },
+        {
+          "y": "2020-02-24",
+          "a": "7.4"
+        },
+        {
+          "y": "2020-02-25",
+          "a": "6.22"
+        },
+        {
+          "y": "2020-02-26",
+          "a": "5.59"
+        },
+        {
+          "y": "2020-02-27",
+          "a": "4.13"
+        },
+        {
+          "y": "2020-02-28",
+          "a": "8.23"
+        },
+        {
+          "y": "2020-02-29",
+          "a": "8.78"
+        },
+        {
+          "y": "2020-03-01",
+          "a": "10.22"
+        },
+        {
+          "y": "2020-03-02",
+          "a": "7.38"
+        },
+        {
+          "y": "2020-03-03",
+          "a": "6.9"
+        },
+        {
+          "y": "2020-03-04",
+          "a": "11.43"
+        },
+        {
+          "y": "2020-03-05",
+          "a": "7.53"
+        },
+        {
+          "y": "2020-03-06",
+          "a": "6.86"
+        },
+        {
+          "y": "2020-03-07",
+          "a": "3.09"
+        },
+        {
+          "y": "2020-03-08",
+          "a": "4.57"
+        },
+        {
+          "y": "2020-03-09",
+          "a": "7.12"
+        },
+        {
+          "y": "2020-03-10",
+          "a": "4.42"
+        },
+        {
+          "y": "2020-03-11",
+          "a": "6.61"
+        },
+        {
+          "y": "2020-03-12",
+          "a": "10.83"
+        },
+        {
+          "y": "2020-03-13",
+          "a": "7.06"
+        },
+        {
+          "y": "2020-03-14",
+          "a": "3.24"
+        },
+        {
+          "y": "2020-03-15",
+          "a": "7.01"
+        },
+        {
+          "y": "2020-03-16",
+          "a": "9.83"
+        },
+        {
+          "y": "2020-03-17",
+          "a": "5.36"
+        },
+        {
+          "y": "2020-03-18",
+          "a": "9.54"
+        },
+        {
+          "y": "2020-03-19",
+          "a": "8.83"
+        },
+        {
+          "y": "2020-03-20",
+          "a": "8.4"
+        },
+        {
+          "y": "2020-03-21",
+          "a": "6.9"
+        },
+        {
+          "y": "2020-03-22",
+          "a": "5.18"
+        },
+        {
+          "y": "2020-03-23",
+          "a": "7.08"
+        },
+        {
+          "y": "2020-03-24",
+          "a": "7.13"
+        },
+        {
+          "y": "2020-03-25",
+          "a": "9.6"
+        },
+        {
+          "y": "2020-03-26",
+          "a": "7.34"
+        },
+        {
+          "y": "2020-03-27",
+          "a": "6.14"
+        },
+        {
+          "y": "2020-03-28",
+          "a": "4.38"
+        },
+        {
+          "y": "2020-03-29",
+          "a": "6.12"
+        },
+        {
+          "y": "2020-03-30",
+          "a": "9.3"
+        },
+        {
+          "y": "2020-03-31",
+          "a": "5.85"
+        },
+        {
+          "y": "2020-04-01",
+          "a": "6.08"
+        },
+        {
+          "y": "2020-04-02",
+          "a": "4.11"
+        },
+        {
+          "y": "2020-04-03",
+          "a": "6.01"
+        },
+        {
+          "y": "2020-04-04",
+          "a": "8.17"
+        },
+        {
+          "y": "2020-04-05",
+          "a": "13.03"
+        },
+        {
+          "y": "2020-04-06",
+          "a": "10.29"
+        },
+        {
+          "y": "2020-04-07",
+          "a": "13.4"
+        },
+        {
+          "y": "2020-04-08",
+          "a": "12.07"
+        },
+        {
+          "y": "2020-04-09",
+          "a": "13.91"
+        },
+        {
+          "y": "2020-04-10",
+          "a": "13.22"
+        },
+        {
+          "y": "2020-04-11",
+          "a": "11.8"
+        },
+        {
+          "y": "2020-04-12",
+          "a": "9.43"
+        },
+        {
+          "y": "2020-04-13",
+          "a": "10.48"
+        },
+        {
+          "y": "2020-04-14",
+          "a": "10.04"
+        },
+        {
+          "y": "2020-04-15",
+          "a": "10.26"
+        },
+        {
+          "y": "2020-04-16",
+          "a": "12.15"
+        },
+        {
+          "y": "2020-04-17",
+          "a": "11.52"
+        },
+        {
+          "y": "2020-04-18",
+          "a": "10.3"
+        },
+        {
+          "y": "2020-04-19",
+          "a": "9.34"
+        },
+        {
+          "y": "2020-04-20",
+          "a": "8.45"
+        },
+        {
+          "y": "2020-04-21",
+          "a": "10.0"
+        },
+        {
+          "y": "2020-04-22",
+          "a": "8.61"
+        },
+        {
+          "y": "2020-04-23",
+          "a": "7.76"
+        },
+        {
+          "y": "2020-04-24",
+          "a": "10.11"
+        },
+        {
+          "y": "2020-04-25",
+          "a": "9.92"
+        },
+        {
+          "y": "2020-04-26",
+          "a": "8.76"
+        },
+        {
+          "y": "2020-04-27",
+          "a": "9.28"
+        },
+        {
+          "y": "2020-04-28",
+          "a": "8.1"
+        },
+        {
+          "y": "2020-04-29",
+          "a": "8.97"
+        },
+        {
+          "y": "2020-04-30",
+          "a": "11.52"
+        },
+        {
+          "y": "2020-05-01",
+          "a": "10.93"
+        },
+        {
+          "y": "2020-05-02",
+          "a": "12.41"
+        },
+        {
+          "y": "2020-05-03",
+          "a": "14.29"
+        },
+        {
+          "y": "2020-05-04",
+          "a": "12.82"
+        },
+        {
+          "y": "2020-05-05",
+          "a": "11.56"
+        },
+        {
+          "y": "2020-05-06",
+          "a": "12.84"
+        },
+        {
+          "y": "2020-05-07",
+          "a": "11.72"
+        },
+        {
+          "y": "2020-05-08",
+          "a": "11.41"
+        },
+        {
+          "y": "2020-05-09",
+          "a": "9.82"
+        },
+        {
+          "y": "2020-05-10",
+          "a": "11.1"
+        },
+        {
+          "y": "2020-05-11",
+          "a": "12.67"
+        },
+        {
+          "y": "2020-05-12",
+          "a": "10.81"
+        },
+        {
+          "y": "2020-05-13",
+          "a": "10.06"
+        },
+        {
+          "y": "2020-05-14",
+          "a": "9.72"
+        },
+        {
+          "y": "2020-05-15",
+          "a": "10.5"
+        },
+        {
+          "y": "2020-05-16",
+          "a": "11.34"
+        },
+        {
+          "y": "2020-05-17",
+          "a": "12.32"
+        },
+        {
+          "y": "2020-05-18",
+          "a": "11.58"
+        },
+        {
+          "y": "2020-05-19",
+          "a": "13.05"
+        },
+        {
+          "y": "2020-05-20",
+          "a": "12.48"
+        },
+        {
+          "y": "2020-05-21",
+          "a": "12.19"
+        },
+        {
+          "y": "2020-05-22",
+          "a": "12.44"
+        },
+        {
+          "y": "2020-05-23",
+          "a": "13.32"
+        },
+        {
+          "y": "2020-05-24",
+          "a": "12.66"
+        },
+        {
+          "y": "2020-05-25",
+          "a": "15.9"
+        },
+        {
+          "y": "2020-05-26",
+          "a": "16.8"
+        },
+        {
+          "y": "2020-05-27",
+          "a": "15.05"
+        },
+        {
+          "y": "2020-05-28",
+          "a": "15.82"
+        },
+        {
+          "y": "2020-05-29",
+          "a": "15.12"
+        },
+        {
+          "y": "2020-05-30",
+          "a": "16.13"
+        },
+        {
+          "y": "2020-05-31",
+          "a": "16.27"
+        },
+        {
+          "y": "2020-06-01",
+          "a": "17.6"
+        },
+        {
+          "y": "2020-06-02",
+          "a": "15.15"
+        },
+        {
+          "y": "2020-06-03",
+          "a": "14.93"
+        },
+        {
+          "y": "2020-06-04",
+          "a": "14.2"
+        },
+        {
+          "y": "2020-06-05",
+          "a": "10.48"
+        },
+        {
+          "y": "2020-06-06",
+          "a": "11.14"
+        },
+        {
+          "y": "2020-06-07",
+          "a": "11.61"
+        },
+        {
+          "y": "2020-06-08",
+          "a": "10.46"
+        },
+        {
+          "y": "2020-06-09",
+          "a": "10.47"
+        },
+        {
+          "y": "2020-06-10",
+          "a": "9.78"
+        },
+        {
+          "y": "2020-06-11",
+          "a": "11.12"
+        },
+        {
+          "y": "2020-06-12",
+          "a": "10.74"
+        },
+        {
+          "y": "2020-06-13",
+          "a": "10.57"
+        },
+        {
+          "y": "2020-06-14",
+          "a": "11.13"
+        },
+        {
+          "y": "2020-06-15",
+          "a": "11.18"
+        },
+        {
+          "y": "2020-06-16",
+          "a": "12.25"
+        },
+        {
+          "y": "2020-06-17",
+          "a": "11.46"
+        },
+        {
+          "y": "2020-06-18",
+          "a": "10.11"
+        },
+        {
+          "y": "2020-06-19",
+          "a": "11.97"
+        },
+        {
+          "y": "2020-06-20",
+          "a": "11.01"
+        },
+        {
+          "y": "2020-06-21",
+          "a": "12.48"
+        },
+        {
+          "y": "2020-06-22",
+          "a": "13.97"
+        },
+        {
+          "y": "2020-06-23",
+          "a": "16.87"
+        },
+        {
+          "y": "2020-06-24",
+          "a": "15.57"
+        },
+        {
+          "y": "2020-06-25",
+          "a": "14.42"
+        },
+        {
+          "y": "2020-06-26",
+          "a": "13.88"
+        },
+        {
+          "y": "2020-06-27",
+          "a": "15.45"
+        },
+        {
+          "y": "2020-06-28",
+          "a": "16.58"
+        },
+        {
+          "y": "2020-06-29",
+          "a": "16.3"
+        },
+        {
+          "y": "2020-06-30",
+          "a": "15.06"
+        },
+        {
+          "y": "2020-07-01",
+          "a": "15.9"
+        },
+        {
+          "y": "2020-07-02",
+          "a": "15.09"
+        },
+        {
+          "y": "2020-07-03",
+          "a": "11.7"
+        },
+        {
+          "y": "2020-07-04",
+          "a": "12.3"
+        },
+        {
+          "y": "2020-07-05",
+          "a": "17.6"
+        },
+        {
+          "y": "2020-07-06",
+          "a": "16.77"
+        },
+        {
+          "y": "2020-07-07",
+          "a": "19.01"
+        },
+        {
+          "y": "2020-07-08",
+          "a": "14.94"
+        },
+        {
+          "y": "2020-07-09",
+          "a": "13.82"
+        },
+        {
+          "y": "2020-07-10",
+          "a": "14.91"
+        },
+        {
+          "y": "2020-07-11",
+          "a": "16.95"
+        },
+        {
+          "y": "2020-07-12",
+          "a": "15.66"
+        },
+        {
+          "y": "2020-07-13",
+          "a": "17.65"
+        },
+        {
+          "y": "2020-07-14",
+          "a": "20.0"
+        },
+        {
+          "y": "2020-07-15",
+          "a": "15.98"
+        },
+        {
+          "y": "2020-07-16",
+          "a": "20.44"
+        },
+        {
+          "y": "2020-07-17",
+          "a": "21.77"
+        },
+        {
+          "y": "2020-07-18",
+          "a": "18.21"
+        },
+        {
+          "y": "2020-07-19",
+          "a": "15.06"
+        },
+        {
+          "y": "2020-07-20",
+          "a": "16.04"
+        },
+        {
+          "y": "2020-07-21",
+          "a": "20.55"
+        },
+        {
+          "y": "2020-07-22",
+          "a": "18.95"
+        },
+        {
+          "y": "2020-07-23",
+          "a": "17.01"
+        },
+        {
+          "y": "2020-07-24",
+          "a": "15.78"
+        },
+        {
+          "y": "2020-07-25",
+          "a": "14.25"
+        },
+        {
+          "y": "2020-07-26",
+          "a": "14.99"
+        },
+        {
+          "y": "2020-07-27",
+          "a": "18.46"
+        },
+        {
+          "y": "2020-07-28",
+          "a": "17.76"
+        },
+        {
+          "y": "2020-07-29",
+          "a": "14.63"
+        },
+        {
+          "y": "2020-07-30",
+          "a": "17.04"
+        },
+        {
+          "y": "2020-07-31",
+          "a": "16.37"
+        },
+        {
+          "y": "2020-08-01",
+          "a": "14.26"
+        },
+        {
+          "y": "2020-08-02",
+          "a": "14.86"
+        },
+        {
+          "y": "2020-08-03",
+          "a": "15.32"
+        },
+        {
+          "y": "2020-08-04",
+          "a": "15.8"
+        },
+        {
+          "y": "2020-08-05",
+          "a": "17.88"
+        },
+        {
+          "y": "2020-08-06",
+          "a": "19.01"
+        },
+        {
+          "y": "2020-08-07",
+          "a": "20.73"
+        },
+        {
+          "y": "2020-08-08",
+          "a": "17.77"
+        },
+        {
+          "y": "2020-08-09",
+          "a": "15.8"
+        },
+        {
+          "y": "2020-08-10",
+          "a": "15.3"
+        },
+        {
+          "y": "2020-08-11",
+          "a": "15.4"
+        },
+        {
+          "y": "2020-08-12",
+          "a": "17.01"
+        },
+        {
+          "y": "2020-08-13",
+          "a": "14.35"
+        },
+        {
+          "y": "2020-08-14",
+          "a": "13.49"
+        },
+        {
+          "y": "2020-08-15",
+          "a": "13.76"
+        },
+        {
+          "y": "2020-08-16",
+          "a": "13.61"
+        },
+        {
+          "y": "2020-08-17",
+          "a": "18.38"
+        },
+        {
+          "y": "2020-08-18",
+          "a": "17.72"
+        },
+        {
+          "y": "2020-08-19",
+          "a": "15.87"
+        },
+        {
+          "y": "2020-08-20",
+          "a": "16.73"
+        },
+        {
+          "y": "2020-08-21",
+          "a": "18.63"
+        },
+        {
+          "y": "2020-08-22",
+          "a": "14.16"
+        },
+        {
+          "y": "2020-08-23",
+          "a": "13.37"
+        },
+        {
+          "y": "2020-08-24",
+          "a": "15.16"
+        },
+        {
+          "y": "2020-08-25",
+          "a": "17.68"
+        },
+        {
+          "y": "2020-08-26",
+          "a": "16.26"
+        },
+        {
+          "y": "2020-08-27",
+          "a": "17.42"
+        },
+        {
+          "y": "2020-08-28",
+          "a": "16.0"
+        },
+        {
+          "y": "2020-08-29",
+          "a": "12.67"
+        },
+        {
+          "y": "2020-08-30",
+          "a": "12.91"
+        },
+        {
+          "y": "2020-08-31",
+          "a": "13.95"
+        },
+        {
+          "y": "2020-09-01",
+          "a": "16.38"
+        },
+        {
+          "y": "2020-09-02",
+          "a": "12.93"
+        },
+        {
+          "y": "2020-09-03",
+          "a": "15.93"
+        },
+        {
+          "y": "2020-09-04",
+          "a": "18.02"
+        },
+        {
+          "y": "2020-09-05",
+          "a": "17.06"
+        },
+        {
+          "y": "2020-09-06",
+          "a": "17.29"
+        },
+        {
+          "y": "2020-09-07",
+          "a": "18.19"
+        },
+        {
+          "y": "2020-09-08",
+          "a": "18.65"
+        },
+        {
+          "y": "2020-09-09",
+          "a": "18.11"
+        },
+        {
+          "y": "2020-09-10",
+          "a": "16.69"
+        },
+        {
+          "y": "2020-09-11",
+          "a": "17.23"
+        },
+        {
+          "y": "2020-09-12",
+          "a": "16.99"
+        },
+        {
+          "y": "2020-09-13",
+          "a": "18.82",
+          "b": "18.82",
+          "c": "18.82"
+        },
+        {
+          "y": "2020-09-14",
+          "a": "18.07",
+          "b": "19.82"
+        },
+        {
+          "y": "2020-09-15",
+          "a": "17.03"
+        },
+        {
+          "y": "2020-09-16",
+          "a": "17.8364039406"
+        },
+        {
+          "y": "2020-09-17",
+          "a": "17.7748792283"
+        },
+        {
+          "y": "2020-09-18",
+          "a": "17.2100347768"
+        },
+        {
+          "y": "2020-09-19",
+          "a": "17.8042678953"
+        },
+        {
+          "y": "2020-09-20",
+          "a": "17.0677864658"
+        },
+        {
+          "y": "2020-09-21",
+          "a": "17.1507878646"
+        },
+        {
+          "y": "2020-09-22",
+          "a": "17.1424248076"
+        },
+        {
+          "y": "2020-09-23",
+          "a": "16.7554760896"
+        },
+        {
+          "y": "2020-09-24",
+          "a": "18.4342068004",
+          "b": "25.00"
+        },
+        {
+          "y": "2020-09-24",
+          "a": "18.4342068004",
+          "c": "15.00"
+        }
+      ]// [ line-angle-chart ] Start
+      Morris.Line({
+        element: 'morris-line-chart',
+        data: datas,
+        xkey: 'y',
+        redraw: true,
+        resize: true,
+        smooth: false,
+        ykeys: ['a', 'b', 'c'],
+        hideHover: 'auto',
+        responsive: true,
+        labels: ['Series A', 'Series B', 'Series C'],
+        lineColors: ['#1de9b6', '#04a9f5', '#04a9f5']
+      });
+      // [ line-angle-chart ] end
+      // [ line-smooth-chart ] start
+      Morris.Line({
+        element: 'morris-line-smooth-chart',
+        data: [{
+          y: '2006',
+          a: 100,
+          b: 90
+        },
+        {
+          y: '2007',
+          a: 75,
+          b: 65
+        },
+        {
+          y: '2008',
+          a: 50,
+          b: 40
+        },
+        {
+          y: '2009',
+          a: 75,
+          b: 65
+        },
+        {
+          y: '2010',
+          a: 50,
+          b: 40
+        },
+        {
+          y: '2011',
+          a: 75,
+          b: 65
+        },
+        {
+          y: '2012',
+          a: 100,
+          b: 90
+        }
+        ],
+        xkey: 'y',
+        redraw: true,
+        resize: true,
+        ykeys: ['a', 'b'],
+        hideHover: 'auto',
+        responsive: true,
+        labels: ['Series A', 'Series B'],
+        lineColors: ['#1de9b6', '#A389D4']
+      });
+      // [ line-smooth-chart ] end
+    }, 700);
+  });
+
+
+</script>
+
+{% endblock javascripts %}

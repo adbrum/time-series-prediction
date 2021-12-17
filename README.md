@@ -33,7 +33,7 @@ PRO versions include **Premium UI Kits**, Lifetime updates and **24/7 LIVE Suppo
 
 <br />
 
-![SAGRA Charts - Open-Source Admin Panel Coded in Django.](https://raw.githubusercontent.com/app-generator/django-datta-able/master/media/django-dashboard-dattaable-screen.png)
+![SAGRA Gráficos - Open-Source Admin Panel Coded in Django.](https://raw.githubusercontent.com/app-generator/django-datta-able/master/media/django-dashboard-dattaable-screen.png)
 
 <br />
 
