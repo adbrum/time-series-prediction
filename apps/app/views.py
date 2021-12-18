@@ -1,46 +1,34 @@
 # -*- encoding: utf-8 -*-
 import glob
-from django import template
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseRedirect
-from django.template import loader
-from django.urls import reverse
-
-from django.core.files.storage import FileSystemStorage
-from django.shortcuts import render
-from django.shortcuts import redirect, render
-from pmdarima import auto_arima
-from datetime import datetime
-from pandas import concat
-from pandas.plotting import autocorrelation_plot
-from pandas import DataFrame
-from statsmodels.tsa.stattools import adfuller, kpss
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-from statsmodels.tsa.arima_model import ARIMA
-from statsmodels.tsa.seasonal import seasonal_decompose
-from sklearn.metrics import mean_squared_error
-from math import sqrt
-from sqlalchemy import create_engine
-import warnings
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import seaborn as sns
-import statsmodels.api as sm
 import json
 import os
 import time
-from multiprocessing import Pool, cpu_count, Array
-
-from multiprocessing import cpu_count
-from joblib import Parallel
-from joblib import delayed
+from datetime import datetime
+from math import sqrt
+from multiprocessing import Pool, cpu_count
 from pathlib import Path
+from zipfile import ZipFile
+
+import matplotlib.pyplot as plt
+import pandas as pd
+from django import template
+from django.contrib.auth.decorators import login_required
+from django.core.files.storage import FileSystemStorage
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import redirect, render
+from django.template import loader
+from django.urls import reverse
+from joblib import delayed
+from pandas import concat
+from pandas.plotting import autocorrelation_plot
+from pmdarima import auto_arima
+from sklearn.metrics import mean_squared_error
+from sqlalchemy import create_engine
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.stattools import adfuller, kpss
 
 from .models import SAGRAData
-from zipfile import ZipFile
 
 df = None
 
@@ -97,8 +85,6 @@ def index(request):
     if request.FILES.get('myfile', False):
         SAGRAData.objects.all().delete()
 
-        # SAGRAData.objects.filter(pk=1).delete()
-
         myfile = request.FILES['myfile']
 
         item_value = request.POST.get('item_value')
@@ -140,11 +126,10 @@ def index(request):
     return HttpResponse(html_template.render(context, request))
 
 
-@ login_required(login_url="/login/")
+@login_required(login_url="/login/")
 def pages(request):
     context = {}
-    # All resource paths end in .html.
-    # Pick out the html file name from the url. And load that template.
+
     try:
         load_template = request.path.split('/')[-1]
 
