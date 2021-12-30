@@ -158,6 +158,7 @@ def open_file_automodel(filename, item_value, periods, switch):
     file_extension = file_path.suffix.lower()[1:]
 
     if SAGRAData.objects.exists():
+        print('There are data already loaded')
 
         df = pd.DataFrame.from_records(SAGRAData.objects.all().values())
 
