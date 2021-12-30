@@ -265,6 +265,8 @@ def open_file_automodel(filename, item_value, periods, switch):
 
 def plotarima(n_periods, automodel, serie, field):
 
+    print('XXXXXXXXXXXXXXXXXXXXXXXXXX: ', n_periods)
+
     # Forecast
     fc, confint = automodel.predict(
         n_periods=n_periods, return_conf_int=True)
