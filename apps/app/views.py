@@ -327,6 +327,10 @@ def plotarima(n_periods, automodel, serie, field):
 
     json_list = []
 
+    jsonMerged = {**json.loads(data_serie), **json.loads(data)}
+
+    create_xlsx(jsonMerged)
+
     return json_list
 
 
