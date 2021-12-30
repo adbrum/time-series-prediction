@@ -11,6 +11,7 @@ from zipfile import ZipFile
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import openpyxl
 from django import template
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
@@ -163,8 +164,6 @@ def open_file_automodel(filename, item_value, periods, switch):
         df = pd.DataFrame.from_records(SAGRAData.objects.all().values())
 
     else:
-        SAGRAData.objects.all().delete()
-
         df = pd.read_excel(f'core/static/files/upload/{filename}')
 
         if file_extension == 'xlsx':
