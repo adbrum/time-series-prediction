@@ -348,11 +348,7 @@ def timed(func):
 
 @timed
 def model_auto_ARIMA(df, switch):
-    if switch:
-        D = 1
-    else:
-        D = 0
-
+    D = 1 if switch else 0
     model = auto_arima(
         df,
         method="nm",
