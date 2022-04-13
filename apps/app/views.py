@@ -55,11 +55,7 @@ names = {
 @login_required(login_url="/login/")
 def index(request):
 
-    if request.POST.get("validation-switcher"):
-        switch = True
-    else:
-        switch = False
-
+    switch = bool(request.POST.get("validation-switcher"))
     filename = ""
 
     data = {
@@ -104,28 +100,28 @@ def index(request):
             "\  ": uploaded_file_url,
             "series": True,
             "filename": myfile.name,
-            "data_json": uploaded_file_url[0:5],
+            "data_json": uploaded_file_url[:5],
+            "period_dates": period_dates,
+        }
+
+    elif request.method == "POST":
+        item_value = request.POST.get("item_value")
+        selected_days = request.POST.get("selectedDays")
+        data_json, period_dates = open_file_automodel(
+            filename, item_value, selected_days, switch
+        )
+
+        data_json = json.dumps(str(data_json))
+
+        context = {
+            "data": data,
+            "series": True,
+            "data_json": json.loads(data_json),
+            "filename": filename,
             "period_dates": period_dates,
         }
     else:
-        if request.method == "POST":
-            item_value = request.POST.get("item_value")
-            selected_days = request.POST.get("selectedDays")
-            data_json, period_dates = open_file_automodel(
-                filename, item_value, selected_days, switch
-            )
-
-            data_json = json.dumps(str(data_json))
-
-            context = {
-                "data": data,
-                "series": True,
-                "data_json": json.loads(data_json),
-                "filename": filename,
-                "period_dates": period_dates,
-            }
-        else:
-            context = {"data": data, "series": False}
+        context = {"data": data, "series": False}
 
     return HttpResponse(html_template.render(context, request))
 
@@ -287,13 +283,10 @@ def plotarima(n_periods, automodel, serie, field):
 
     data = json.loads(json_serie)
 
-    data_dict = dict()
-
-    for key, value in data.items():
-        # print(str(datetime.fromtimestamp(int(key[:-3]))), '->', str(value))
-        data_dict[str(datetime.fromtimestamp(int(key[:-3])))[:10]] = str(
-            round(value, 2)
-        )
+    data_dict = {
+        str(datetime.fromtimestamp(int(key[:-3])))[:10]: str(round(value, 2))
+        for key, value in data.items()
+    }
 
     data = json.dumps(data_dict, indent=4)
 
@@ -307,12 +300,10 @@ def plotarima(n_periods, automodel, serie, field):
 
     data_series = json.loads(data_series)
 
-    data_serie = dict()
-
-    for key, value in data_series.items():
-        # print(str(datetime.fromtimestamp(
-        #     int(key[:-3])))[:10], '->', str(value))
-        data_serie[str(datetime.fromtimestamp(int(key[:-3])))[:10]] = str(value)
+    data_serie = {
+        str(datetime.fromtimestamp(int(key[:-3])))[:10]: str(value)
+        for key, value in data_series.items()
+    }
 
     data_serie = json.dumps(data_serie)
 
@@ -338,13 +329,11 @@ def plotarima(n_periods, automodel, serie, field):
     plt.tight_layout()
     plt.savefig("core/static/files/predicao.png", dpi=300, bbox_inches="tight")
 
-    json_list = []
+    json_merged = {**json.loads(data_serie), **json.loads(data)}
 
-    jsonMerged = {**json.loads(data_serie), **json.loads(data)}
+    create_xlsx(json_merged)
 
-    create_xlsx(jsonMerged)
-
-    return json_list
+    return []
 
 
 def timed(func):
