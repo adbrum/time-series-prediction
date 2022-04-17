@@ -53,13 +53,9 @@ names = {
 
 
 @login_required(login_url="/login/")
-def index(request):
+def index(request) -> json:
 
-    if request.POST.get("validation-switcher"):
-        switch = True
-    else:
-        switch = False
-
+    switch = bool(request.POST.get("validation-switcher"))
     filename = ""
 
     data = {
@@ -92,7 +88,7 @@ def index(request):
         selected_days = request.POST.get("selectedDays")
 
         fs = FileSystemStorage()
-        filename = fs.save("core/static/files/upload/" + myfile.name, myfile)
+        filename = fs.save(f"core/static/files/upload/{myfile.name}", myfile)
         uploaded_file_url = fs.url(filename)
 
         uploaded_file_url, period_dates = open_file_automodel(
@@ -104,28 +100,28 @@ def index(request):
             "\  ": uploaded_file_url,
             "series": True,
             "filename": myfile.name,
-            "data_json": uploaded_file_url[0:5],
+            "data_json": uploaded_file_url[:5],
+            "period_dates": period_dates,
+        }
+
+    elif request.method == "POST":
+        item_value = request.POST.get("item_value")
+        selected_days = request.POST.get("selectedDays")
+        data_json, period_dates = open_file_automodel(
+            filename, item_value, selected_days, switch
+        )
+
+        data_json = json.dumps(str(data_json))
+
+        context = {
+            "data": data,
+            "series": True,
+            "data_json": json.loads(data_json),
+            "filename": filename,
             "period_dates": period_dates,
         }
     else:
-        if request.method == "POST":
-            item_value = request.POST.get("item_value")
-            selected_days = request.POST.get("selectedDays")
-            data_json, period_dates = open_file_automodel(
-                filename, item_value, selected_days, switch
-            )
-
-            data_json = json.dumps(str(data_json))
-
-            context = {
-                "data": data,
-                "series": True,
-                "data_json": json.loads(data_json),
-                "filename": filename,
-                "period_dates": period_dates,
-            }
-        else:
-            context = {"data": data, "series": False}
+        context = {"data": data, "series": False}
 
     return HttpResponse(html_template.render(context, request))
 
