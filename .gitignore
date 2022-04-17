@@ -84,7 +84,10 @@ env/
 venv/ 
 ENV/ 
 env.bak/ 
-venv.bak/ 
+venv.bak/
+
+# Directory for server logs
+apps/darts_logs
 
 # mkdocs documentation 
 /site 
