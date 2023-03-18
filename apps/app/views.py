@@ -5,29 +5,19 @@ import os
 import time
 from datetime import datetime
 from math import sqrt
-from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from zipfile import ZipFile
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import openpyxl
 from django import template
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import redirect, render
 from django.template import loader
 from django.urls import reverse
-from joblib import delayed
-from pandas import concat
-from pandas.plotting import autocorrelation_plot
 from pmdarima import auto_arima
-from sklearn.metrics import mean_squared_error
 from sqlalchemy import create_engine
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import adfuller, kpss
 
 from .models import SAGRAData
 
@@ -163,66 +153,7 @@ def open_file_automodel(filename, item_value, periods, switch):
         df = pd.DataFrame.from_records(SAGRAData.objects.all().values())
 
     else:
-        SAGRAData.objects.all().delete()
-
-        df = pd.read_excel(f"core/static/files/upload/{filename}")
-
-        if file_extension == "xlsx":
-            df = pd.read_excel(
-                f"core/static/files/upload/{filename}", engine="openpyxl"
-            )
-
-        df.rename(
-            columns={
-                "EMA": "EMA",
-                "Data": "date_occurrence",
-                "Tmed (ºC)": "average_temperature",
-                "Tmax (ºC)": "maximum_temperature",
-                "Tmin (ºC)": "minimum_temperature",
-                "HRmed (%)": "average_humidity",
-                "HRmax (%)": "maximum_humidity",
-                "HRmin (%)": "minimum_humidity",
-                "RSG (kj/m2)": "RSG",
-                "DV (graus)": "DV",
-                "VVmed (m/s)": "average_wind_speed",
-                "VVmax (m/s)": "maximum_wind_speed",
-                "P (mm)": "rainfall",
-                "Tmed Relva(ºC)": "average_grass_temperature",
-                "Tmax Relva(ºC)": "maximum_grass_temperature",
-                "Tmin Relva(ºC)": "minimum_grass_temperature",
-                "ET0 (mm)": "ET0",
-            },
-            inplace=True,
-            errors="raise",
-        )
-
-        # host = settings.DATABASES['default']['HOST']
-        # user = settings.DATABASES['default']['USER']
-        # password = settings.DATABASES['default']['PASSWORD']
-        # database_name = settings.DATABASES['default']['NAME']
-
-        # database_url = 'postgresql://{user}:{password}@{host}:5432/{database_name}'.format(
-        #     host=host,
-        #     user=user,
-        #     password=password,
-        #     database_name=database_name,
-        # )
-
-        # engine = create_engine(database_url, echo=False)
-
-        # df.to_sql(SAGRAData._meta.db_table,
-        #            if_exists='replace', con=engine, index_label='id', index=True)
-
-        engine = create_engine("sqlite:///db.sqlite3")
-
-        df.to_sql(
-            SAGRAData._meta.db_table,
-            if_exists="replace",
-            con=engine,
-            index_label="id",
-            index=True,
-        )
-
+        df = open_file(filename, file_extension)
     field = item_value
     n_periods = int(periods)
 
@@ -239,9 +170,7 @@ def open_file_automodel(filename, item_value, periods, switch):
 
     df = df.sort_values("date_occurrence", ascending=False)
     df = df.drop_duplicates(subset="date_occurrence", keep="first")
-    # df.Data = pd.to_datetime(df['date_occurrence'])
     df.set_index("date_occurrence", inplace=True)
-    # df = df.loc[:, ~df.columns.str.contains('^id')]
     df.sort_index(inplace=True)
     df.head()
     plt.figure(figsize=(15, 6))
@@ -268,6 +197,52 @@ def open_file_automodel(filename, item_value, periods, switch):
     zip_files()
 
     return data, period_dates
+
+def open_file(filename, file_extension):
+    SAGRAData.objects.all().delete()
+
+    result = pd.read_excel(f"core/static/files/upload/{filename}")
+
+    if file_extension == "xlsx":
+        result = pd.read_excel(
+            f"core/static/files/upload/{filename}", engine="openpyxl"
+        )
+
+    result.rename(
+        columns={
+            "EMA": "EMA",
+            "Data": "date_occurrence",
+            "Tmed (ºC)": "average_temperature",
+            "Tmax (ºC)": "maximum_temperature",
+            "Tmin (ºC)": "minimum_temperature",
+            "HRmed (%)": "average_humidity",
+            "HRmax (%)": "maximum_humidity",
+            "HRmin (%)": "minimum_humidity",
+            "RSG (kj/m2)": "RSG",
+            "DV (graus)": "DV",
+            "VVmed (m/s)": "average_wind_speed",
+            "VVmax (m/s)": "maximum_wind_speed",
+            "P (mm)": "rainfall",
+            "Tmed Relva(ºC)": "average_grass_temperature",
+            "Tmax Relva(ºC)": "maximum_grass_temperature",
+            "Tmin Relva(ºC)": "minimum_grass_temperature",
+            "ET0 (mm)": "ET0",
+        },
+        inplace=True,
+        errors="raise",
+    )
+
+    engine = create_engine("sqlite:///db.sqlite3")
+
+    result.to_sql(
+        SAGRAData._meta.db_table,
+        if_exists="replace",
+        con=engine,
+        index_label="id",
+        index=True,
+    )
+
+    return result
 
 
 def plotarima(n_periods, automodel, serie, field):
@@ -354,37 +329,35 @@ def timed(func):
 
 
 @timed
-def model_auto_ARIMA(df, switch):
-    if switch:
-        D = 1
-    else:
-        D = 0
+def model_auto_ARIMA(df, seasonal):
+    D = 1 if seasonal else 0
 
     model = auto_arima(
         df,
-        method="nm",
-        maxiter=10,
         start_p=1,
+        d=None,
         start_q=1,
         max_p=3,
+        max_d=2,
         max_q=3,
-        m=12,
         start_P=0,
-        seasonal=switch,
-        test="adf",
         D=D,
+        seasonal=seasonal,
+        m=12,
+        error_action='warn',
         trace=True,
-        error_action="ignore",
+        random_state=42,
+        n_fits=20,
         suppress_warnings=True,
         stepwise=True,
-        simple_differencing=True,
+        information_criterion='aic',
+        alpha=0.05,
     )
 
     print(model.summary())
-    print(f"Best ARIMA {model.order} model")
+    print(f"Best ARIMA {model.order}x{model.seasonal_order} model")
     print(f"AIC: {model.aic()}")
     print(f"BIC: {model.bic()}")
-    print(f"AICc: {model.aicc()}")
 
     return model
 
