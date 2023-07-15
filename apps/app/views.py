@@ -18,6 +18,11 @@ from django.template import loader
 from django.urls import reverse
 from pmdarima import auto_arima
 from sqlalchemy import create_engine
+from django.shortcuts import render, redirect
+from django.template import TemplateDoesNotExist
+from pandas import read_excel, DataFrame
+from functools import wraps
+
 
 from .models import SAGRAData
 
@@ -43,8 +48,7 @@ names = {
 
 
 @login_required(login_url="/login/")
-def index(request) -> json:
-
+def index(request):
     switch = bool(request.POST.get("validation-switcher"))
     filename = ""
 
@@ -73,7 +77,6 @@ def index(request) -> json:
         SAGRAData.objects.all().delete()
 
         myfile = request.FILES["myfile"]
-
         item_value = request.POST.get("item_value")
         selected_days = request.POST.get("selectedDays")
 
@@ -87,7 +90,7 @@ def index(request) -> json:
 
         context = {
             "data": data,
-            "\  ": uploaded_file_url,
+            "uploaded_file_url": uploaded_file_url,
             "series": True,
             "filename": myfile.name,
             "data_json": uploaded_file_url[:5],
@@ -118,54 +121,57 @@ def index(request) -> json:
 
 @login_required(login_url="/login/")
 def pages(request):
-    context = {}
-
     try:
         load_template = request.path.split("/")[-1]
 
         if load_template == "admin":
-            return HttpResponseRedirect(reverse("admin:index"))
+            return redirect("admin:index")
 
-        context["segment"] = load_template
+        context = {"segment": load_template}
+        html_template = get_html_template(load_template)
 
-        html_template = loader.get_template("page-400.html")
+    except TemplateDoesNotExist:
+        html_template = get_html_template("page-404")
 
-        return HttpResponse(html_template.render(context, request))
+    except Exception:
+        html_template = get_html_template("page-500")
 
-    except template.TemplateDoesNotExist:
+    return render(request, html_template, context)
 
-        html_template = loader.get_template("page-404.html")
-        return HttpResponse(html_template.render(context, request))
 
-    except:
-        html_template = loader.get_template("page-500.html")
-        return HttpResponse(html_template.render(context, request))
+def get_html_template(template_name):
+    return f"page-{template_name}.html"
+
+
+from matplotlib import pyplot as plt
+import pandas as pd
+from pathlib import Path
+import os
+import glob
 
 
 def open_file_automodel(filename, item_value, periods, switch):
-
     file_path = Path(filename)
     file_extension = file_path.suffix.lower()[1:]
 
     if SAGRAData.objects.exists():
         print("There are data already loaded")
-
         df = pd.DataFrame.from_records(SAGRAData.objects.all().values())
-
     else:
         df = open_file(filename, file_extension)
+
     field = item_value
     n_periods = int(periods)
 
-    start_test = (df["date_occurrence"][0]).strftime("%d-%m-%Y")
-    end_test = (df["date_occurrence"][len(df) - 1]).strftime("%d-%m-%Y")
+    start_test = df["date_occurrence"].iloc[0].strftime("%d-%m-%Y")
+    end_test = df["date_occurrence"].iloc[-1].strftime("%d-%m-%Y")
 
     print(f"Data inicio {start_test}")
     print(f"Data fim {end_test}")
 
     period_dates = {
-        "start_date": {start_test},
-        "end_date": {end_test},
+        "start_date": start_test,
+        "end_date": end_test,
     }
 
     df = df.sort_values("date_occurrence", ascending=False)
@@ -173,6 +179,7 @@ def open_file_automodel(filename, item_value, periods, switch):
     df.set_index("date_occurrence", inplace=True)
     df.sort_index(inplace=True)
     df.head()
+
     plt.figure(figsize=(15, 6))
     plt.grid()
     plt.tight_layout()
@@ -187,57 +194,43 @@ def open_file_automodel(filename, item_value, periods, switch):
 
     automodel = model_auto_ARIMA(df[field], switch)
 
-    data = plotarima(n_periods, automodel, df, field)
+    data = plot_arima(n_periods, automodel, df, field)
 
-    # remove all excell files
+    cleanup_files()
+
+    return data, period_dates
+
+
+# def plot_arima(n_periods, automodel, df, field):
+#     # Implementation of plot_arima function
+#     pass
+
+
+def cleanup_files():
+    # Remove all excel files
     files = glob.glob("core/static/files/upload/*.xls*")
     for f in files:
         os.remove(f)
 
-    zip_files()
-
-    return data, period_dates
 
 def open_file(filename, file_extension):
     SAGRAData.objects.all().delete()
 
-    result = pd.read_excel(f"core/static/files/upload/{filename}")
+    file_path = f"core/static/files/upload/{filename}"
 
     if file_extension == "xlsx":
-        result = pd.read_excel(
-            f"core/static/files/upload/{filename}", engine="openpyxl"
-        )
+        result = read_excel(file_path, engine="openpyxl")
+    else:
+        result = read_excel(file_path)
 
-    result.rename(
-        columns={
-            "EMA": "EMA",
-            "Data": "date_occurrence",
-            "Tmed (ºC)": "average_temperature",
-            "Tmax (ºC)": "maximum_temperature",
-            "Tmin (ºC)": "minimum_temperature",
-            "HRmed (%)": "average_humidity",
-            "HRmax (%)": "maximum_humidity",
-            "HRmin (%)": "minimum_humidity",
-            "RSG (kj/m2)": "RSG",
-            "DV (graus)": "DV",
-            "VVmed (m/s)": "average_wind_speed",
-            "VVmax (m/s)": "maximum_wind_speed",
-            "P (mm)": "rainfall",
-            "Tmed Relva(ºC)": "average_grass_temperature",
-            "Tmax Relva(ºC)": "maximum_grass_temperature",
-            "Tmin Relva(ºC)": "minimum_grass_temperature",
-            "ET0 (mm)": "ET0",
-        },
-        inplace=True,
-        errors="raise",
-    )
+    result = rename_columns(result)
 
     engine = create_engine("sqlite:///db.sqlite3")
 
     result.to_sql(
         SAGRAData._meta.db_table,
-        if_exists="replace",
         con=engine,
+        if_exists="replace",
         index_label="id",
         index=True,
     )
@@ -245,26 +238,48 @@ def open_file(filename, file_extension):
     return result
 
 
-def plotarima(n_periods, automodel, serie, field):
+def rename_columns(dataframe):
+    renamed_columns = {
+        "EMA": "EMA",
+        "Data": "date_occurrence",
+        "Tmed (ºC)": "average_temperature",
+        "Tmax (ºC)": "maximum_temperature",
+        "Tmin (ºC)": "minimum_temperature",
+        "HRmed (%)": "average_humidity",
+        "HRmax (%)": "maximum_humidity",
+        "HRmin (%)": "minimum_humidity",
+        "RSG (kj/m2)": "RSG",
+        "DV (graus)": "DV",
+        "VVmed (m/s)": "average_wind_speed",
+        "VVmax (m/s)": "maximum_wind_speed",
+        "P (mm)": "rainfall",
+        "Tmed Relva(ºC)": "average_grass_temperature",
+        "Tmax Relva(ºC)": "maximum_grass_temperature",
+        "Tmin Relva(ºC)": "minimum_grass_temperature",
+        "ET0 (mm)": "ET0",
+    }
 
+    dataframe.rename(columns=renamed_columns, inplace=True, errors="raise")
+
+    return dataframe
+
+
+def plot_arima(n_periods, automodel, serie, field):
     # Forecast
     fc, confint = automodel.predict(n_periods=n_periods, return_conf_int=True)
 
-    fc_ind = pd.date_range(serie.index[serie.shape[0] - 1], periods=n_periods, freq="D")
+    fc_ind = pd.date_range(serie.index[-1], periods=n_periods, freq="D")
 
     # Forecast series
     fc_series = pd.Series(fc, index=fc_ind)
     json_serie = fc_series.to_json(orient="index")
 
     data = json.loads(json_serie)
-
-    data_dict = dict()
+    data_dict = {}
 
     for key, value in data.items():
-        # print(str(datetime.fromtimestamp(int(key[:-3]))), '->', str(value))
-        data_dict[str(datetime.fromtimestamp(int(key[:-3])))[:10]] = str(
-            round(value, 2)
-        )
+        forecast_date = datetime.fromtimestamp(int(key[:-3])).strftime("%Y-%m-%d")
+        data_dict[forecast_date] = round(value, 2)
 
     data = json.dumps(data_dict, indent=4)
 
@@ -272,18 +287,14 @@ def plotarima(n_periods, automodel, serie, field):
     lower_series = pd.Series(confint[:, 0], index=fc_ind)
     upper_series = pd.Series(confint[:, 1], index=fc_ind)
 
-    series = serie[field]
-
-    data_series = series.to_json(orient="index")
-
+    data_series = serie[field].to_json(orient="index")
     data_series = json.loads(data_series)
 
-    data_serie = dict()
+    data_serie = {}
 
     for key, value in data_series.items():
-        # print(str(datetime.fromtimestamp(
-        #     int(key[:-3])))[:10], '->', str(value))
-        data_serie[str(datetime.fromtimestamp(int(key[:-3])))[:10]] = str(value)
+        data_date = datetime.fromtimestamp(int(key[:-3])).strftime("%Y-%m-%d")
+        data_serie[data_date] = value
 
     data_serie = json.dumps(data_serie)
 
@@ -292,7 +303,6 @@ def plotarima(n_periods, automodel, serie, field):
     # Create plot
     plt.figure(figsize=(15, 6))
     plt.grid()
-    # plt.tight_layout()
     plt.plot(serie[field])
     plt.plot(fc_series, color="orange")
     plt.title(
@@ -309,20 +319,41 @@ def plotarima(n_periods, automodel, serie, field):
     plt.tight_layout()
     plt.savefig("core/static/files/predicao.png", dpi=300, bbox_inches="tight")
 
-    json_list = []
-
     jsonMerged = {**json.loads(data_serie), **json.loads(data)}
-
     create_xlsx(jsonMerged)
 
-    return json_list
+    return []
+
+
+def create_xlsx(data_dict):
+    df = pd.DataFrame(data_dict.items(), columns=["Date", "Value"])
+    filename = "core/static/files/prediction.xlsx"
+    df.to_excel(filename, index=False)
 
 
 def timed(func):
+    @wraps(func)
     def _wrapper(*args, **kwargs):
-        start = time.time()
+        start = time.perf_counter()
         res = func(*args, **kwargs)
-        print(f"Completed {func.__name__} in {time.time() - start:.3f} sec")
+        end = time.perf_counter()
+        print(f"Completed {func.__name__} in {end - start:.3f} seconds")
+        return res
+
+    return _wrapper
+
+
+import time
+from functools import wraps
+
+
+def timed(func):
+    @wraps(func)
+    def _wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        res = func(*args, **kwargs)
+        end = time.perf_counter()
+        print(f"Completed {func.__name__} in {end - start:.3f} seconds")
         return res
 
     return _wrapper
@@ -344,13 +375,13 @@ def model_auto_ARIMA(df, seasonal):
         D=D,
         seasonal=seasonal,
         m=12,
-        error_action='warn',
+        error_action="warn",
         trace=True,
         random_state=42,
         n_fits=20,
         suppress_warnings=True,
         stepwise=True,
-        information_criterion='aic',
+        information_criterion="aic",
         alpha=0.05,
     )
 
@@ -362,10 +393,10 @@ def model_auto_ARIMA(df, seasonal):
     return model
 
 
-def create_xlsx(data):
-    df = pd.DataFrame(data=data, index=[0])
-    df = df.T
-    df.to_excel("core/static/files/predicao.xlsx")
+# def create_xlsx(data):
+#     df = pd.DataFrame(data=data, index=[0])
+#     df = df.T
+#     df.to_excel("core/static/files/predicao.xlsx")
 
 
 def zip_files():
