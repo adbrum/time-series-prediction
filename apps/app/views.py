@@ -10,19 +10,17 @@ from zipfile import ZipFile
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from django import template
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.template import loader
-from django.urls import reverse
 from pmdarima import auto_arima
 from sqlalchemy import create_engine
 from django.shortcuts import render, redirect
 from django.template import TemplateDoesNotExist
-from pandas import read_excel, DataFrame
+from pandas import read_excel
 from functools import wraps
-
+from matplotlib import pyplot as plt
 
 from .models import SAGRAData
 
@@ -143,13 +141,6 @@ def get_html_template(template_name):
     return f"page-{template_name}.html"
 
 
-from matplotlib import pyplot as plt
-import pandas as pd
-from pathlib import Path
-import os
-import glob
-
-
 def open_file_automodel(filename, item_value, periods, switch):
     file_path = Path(filename)
     file_extension = file_path.suffix.lower()[1:]
@@ -199,11 +190,6 @@ def open_file_automodel(filename, item_value, periods, switch):
     cleanup_files()
 
     return data, period_dates
-
-
-# def plot_arima(n_periods, automodel, df, field):
-#     # Implementation of plot_arima function
-#     pass
 
 
 def cleanup_files():
@@ -391,12 +377,6 @@ def model_auto_ARIMA(df, seasonal):
     print(f"BIC: {model.bic()}")
 
     return model
-
-
-# def create_xlsx(data):
-#     df = pd.DataFrame(data=data, index=[0])
-#     df = df.T
-#     df.to_excel("core/static/files/predicao.xlsx")
 
 
 def zip_files():
