@@ -8,7 +8,7 @@ A Django web application for forecasting meteorological time series. Users sign 
 - Upload of a spreadsheet and selection of the variable to model: temperature (average, maximum, minimum), humidity, global solar radiation, wind direction and speed, rainfall, grass temperature and evapotranspiration (ET0)
 - Automatic model selection with `pmdarima` `auto_arima`, with optional seasonality (period of 12)
 - Diagnostics: ADF and KPSS stationarity tests, ACF and PACF plots, autocorrelation plot and seasonal decomposition
-- Forecast plots, with RMSE evaluation when validation is enabled
+- Forecast plots of the selected variable
 - Export of the results as PNG, XLSX and a ZIP archive
 - Deployment scripts for Docker, Gunicorn and Nginx, plus helper scripts to check the server and free memory
 
